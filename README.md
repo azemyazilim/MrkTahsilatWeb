@@ -1,169 +1,90 @@
-# MrkTahsilatWeb - Tahsilat Yönetim Sistemi
+# MrkTahsilatWeb - Local Development
 
-Modern ve kullanıcı dostu tahsilat yönetim web uygulaması.
+Bu proje artık sadece local geliştirme için optimize edilmiştir ve gerçek veritabanına bağlanmaktadır.
 
-## 🚀 Özellikler
+## 🗂️ Proje Yapısı
 
-- **Kullanıcı Girişi**: Güvenli authentication sistemi
-- **Tahsilat Formu**: Kapsamlı tahsilat kayıt formu
-- **Resim Yükleme**: Kamera ve galeri entegrasyonu
-- **Dinamik Alanlar**: Tahsilat türüne göre değişen form alanları
-- **Özet Raporlar**: Günlük, haftalık, aylık tahsilat özetleri
-- **Plasiyer Bazında Raporlar**: Detaylı plasiyer performans takibi
-- **Filtreleme**: Gelişmiş tablo filtreleme özellikleri
-- **Responsive Tasarım**: Mobil ve desktop uyumluluğu
-- **Türkçe Destek**: Tam Türkçe dil desteği
-
-## 🛠️ Teknolojiler
-
-### Frontend
-- **React.js** - Modern UI framework
-- **Material-UI** - UI component kütüphanesi
-- **Axios** - HTTP client
-- **Responsive Design** - Mobil uyumlu tasarım
-
-### Backend
-- **Node.js** - Server runtime
-- **Express.js** - Web framework
-- **MSSQL** - Database
-- **dotenv** - Environment variables
-
-## 📋 Gereksinimler
-
-- Node.js 16+ LTS
-- SQL Server 2019+
-- npm veya yarn
-
-## 🚀 Kurulum
-
-### 1. Repository Clone
-```bash
-git clone https://github.com/yourusername/MrkTahsilatWeb.git
-cd MrkTahsilatWeb
+```
+MrkTahsilatWeb/
+├── backend/                 # Node.js/Express API Server
+│   ├── index.js            # Ana backend dosyası
+│   ├── package.json        # Dependencies
+│   └── .env                # Veritabanı ayarları
+├── frontend/               # React.js Frontend
+│   ├── src/                # React source files
+│   ├── public/            # Static files
+│   └── package.json       # Dependencies
+└── README.md              # Bu dosya
 ```
 
-### 2. Backend Kurulumu
+## 🔧 Veritabanı Bağlantısı
+
+Backend aşağıdaki tablolarla çalışır:
+
+- **KULLANICITB** - Kullanıcı giriş bilgileri
+- **LG_002_CLCARD** - Müşteri listesi 
+- **GunlukTahsilat_V** - Günlük tahsilat verileri
+
+### Bağlantı Ayarları
+```
+Server: 88.247.8.178:2024
+Database: GO3
+User: sa
+Password: 8423Otomotiv
+```
+
+## 🚀 Nasıl Başlatılır
+
+### 1. Backend Başlatma
 ```bash
 cd backend
 npm install
-cp .env.example .env
-# .env dosyasını düzenleyin
-npm start
+node index.js
 ```
 
-### 3. Frontend Kurulumu
+### 2. Frontend Başlatma (Yeni Terminal)
 ```bash
-cd frontend
+cd frontend  
 npm install
 npm start
 ```
 
-### 4. Database Kurulumu
-SQL Server'da gerekli tabloları oluşturun:
-- KULLANICITB
-- LG_002_CLCARD
-- GunlukTahsilat_V
+## 📡 API Endpoints
 
-## 🔧 Konfigürasyon
+Backend şu endpoints'leri sağlar:
 
-### Backend (.env dosyası)
-```env
-PORT=5000
-DB_SERVER=localhost
-DB_DATABASE=YourDatabase
-DB_USER=YourUsername
-DB_PASSWORD=YourPassword
-```
+- `POST /api/login` - Kullanıcı girişi (KULLANICITB)
+- `GET /api/health` - Server durumu
+- `GET /api/clcard` - Müşteri listesi (LG_002_CLCARD)
+- `GET /api/gunluk-tahsilat` - Günlük tahsilat (GunlukTahsilat_V)
+- `GET /api/stats` - İstatistikler
+- `GET /api/test` - Tüm tabloları test et
 
-### Frontend
-Frontend varsayılan olarak `http://localhost:5000` adresindeki backend'e bağlanır.
+## 🌐 Erişim
 
-## 📱 Kullanım
+- **Backend API:** http://localhost:5000
+- **Frontend:** http://localhost:3000
+- **API Test:** http://localhost:5000/api/test
 
-1. **Giriş**: Kullanıcı adı ve şifre ile giriş yapın
-2. **Tahsilat Ekleme**: Sol panelden yeni tahsilat kaydı oluşturun
-3. **Resim Ekleme**: Kamera veya galeriden belge fotoğrafı ekleyin
-4. **Raporlama**: Sağ panelden özet bilgileri görüntüleyin
-5. **Filtreleme**: Alt tabloda detaylı filtreleme yapın
+## 🧪 Test
 
-## 📊 Özellik Detayları
+API'lerin çalışıp çalışmadığını test etmek için:
 
-### Tahsilat Türleri
-- Nakit
-- Kredi Kartı (Taksit seçeneği ile)
-- Banka Havalesi
-- Çek
-- Senet
-
-### Dinamik Alanlar
-- **Banka Bilgileri**: Kredi kartı ve havale için
-- **Taksit Sayısı**: Kredi kartı için (1-12 ay)
-
-### Resim Yönetimi
-- 5MB maksimum dosya boyutu
-- Sadece resim formatları kabul edilir
-- Kamera yakalama desteği (mobil)
-- Önizleme özelliği
-
-## 🚀 Deployment
-
-### Production Build
 ```bash
-# Frontend build
-cd frontend
-npm run build
+# PowerShell
+Invoke-WebRequest -Uri "http://localhost:5000/api/test" -Method GET
 
-# Backend production mode
-cd backend
-NODE_ENV=production npm start
+# Browser
+http://localhost:5000/api/test
 ```
 
-### Nginx Konfigürasyonu
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-    
-    location / {
-        root /var/www/MrkTahsilatWeb/frontend/build;
-        try_files $uri $uri/ /index.html;
-    }
-    
-    location /api {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
+## 📋 Temizlenmiş Dosyalar
 
-## 🔒 Güvenlik
+Aşağıdaki deployment ve server dosyaları kaldırıldı:
+- Tüm .sh deployment scriptleri
+- Production environment dosyaları  
+- Server konfigürasyon dosyaları
+- Duplicate klasörler
+- Gereksiz batch dosyaları
 
-- SQL injection koruması
-- Environment variables ile hassas bilgi yönetimi
-- CORS konfigürasyonu
-- Input validation
-
-## 📝 API Endpoints
-
-- `POST /api/login` - Kullanıcı girişi
-- `GET /api/clcard` - Cari liste
-- `GET /api/gunluk-tahsilat` - Tahsilat verileri
-
-## 🤝 Katkıda Bulunma
-
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit edin (`git commit -m 'Add amazing feature'`)
-4. Branch'e push edin (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır.
-
-## 👥 İletişim
-
-Proje Sahibi - [your-email@example.com](mailto:your-email@example.com)
-
-Proje Linki: [https://github.com/yourusername/MrkTahsilatWeb](https://github.com/yourusername/MrkTahsilatWeb)
+Proje artık sadece local geliştirme için optimize edilmiştir.

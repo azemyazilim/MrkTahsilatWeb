@@ -597,8 +597,10 @@ function TahsilatForm({ username }) {
     
     // Cari listesi API çağrısı - kullanıcıya özel (SPECODE = username)
     axios.get(`http://localhost:5000/api/clcard?username=${username}`).then(res => {
-      setClcards(res.data);
-      console.log('Cari listesi yenilendi:', res.data.length, 'kayıt');
+      // Backend {success: true, data: [...]} formatında döndürüyor
+      const clcardsData = res.data.success ? res.data.data : [];
+      setClcards(clcardsData);
+      console.log('Cari listesi yenilendi:', clcardsData.length, 'kayıt');
     }).catch(err => {
       console.error('Cari listesi yenilenirken hata:', err);
       setClcards([]); // Hata durumunda boş array
@@ -606,10 +608,12 @@ function TahsilatForm({ username }) {
     
     // Günlük tahsilat verilerini al - belirtilen plasiyer filtresi ile
     axios.get(`http://localhost:5000/api/gunluk-tahsilat`).then(res => {
-      console.log('API\'den gelen yeni ham veri (ilk 3 kayıt):', res.data.slice(0, 3));
+      // Backend {success: true, data: [...]} formatında döndürüyor
+      const tahsilatData = res.data.success ? res.data.data : [];
+      console.log('API\'den gelen yeni ham veri (ilk 3 kayıt):', tahsilatData.slice(0, 3));
       
       // Sadece mevcut ayın verilerini filtrele
-      const currentMonthData = filterCurrentMonthData(res.data);
+      const currentMonthData = filterCurrentMonthData(tahsilatData);
       
       // ID'ye göre azalan sıralama (DESC)
       const sortedData = currentMonthData.sort((a, b) => {
