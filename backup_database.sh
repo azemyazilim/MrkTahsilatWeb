@@ -8,7 +8,7 @@ set -e
 # Configuration
 DB_SERVER="localhost"
 DB_USER="sa"
-DB_PASSWORD="YourStrongPassword123!"
+DB_PASSWORD="MrkTahsilat2024!"
 DB_NAME="MrkTahsilatDB"
 BACKUP_DIR="/home/$USER/backups/database"
 LOG_FILE="/var/log/backup.log"

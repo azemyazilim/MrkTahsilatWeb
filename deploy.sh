@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-PROJECT_DIR="/var/www/mrktahsilatweb"
+PROJECT_DIR="/var/www/mrktahsilat"
 BACKUP_DIR="/home/$USER/backups"
 LOG_FILE="/var/log/deployment.log"
 ENVIRONMENT=${1:-production}

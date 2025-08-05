@@ -1,9 +1,9 @@
-# 🚀 MrkTahsilatWeb - mrkotomotiv.com Deployment Rehberi
+# 🚀 MrkTahsilatWeb - mrktahsilat.com Deployment Rehberi
 
 ## 🌐 Domain Bilgileri
-- **Ana Domain:** mrkotomotiv.com
-- **WWW Subdomain:** www.mrkotomotiv.com
-- **Backend API:** mrkotomotiv.com/api
+- **Ana Domain:** mrktahsilat.com
+- **WWW Subdomain:** www.mrktahsilat.com
+- **Backend API:** mrktahsilat.com/api
 - **SSL:** Let's Encrypt ücretsiz sertifika
 
 ## 📋 Deployment Adımları

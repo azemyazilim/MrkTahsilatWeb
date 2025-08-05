@@ -1,4 +1,4 @@
-# 🚀 MrkTahsilatWeb - mrkotomotiv.com Hızlı Kurulum
+# 🚀 MrkTahsilatWeb - mrktahsilat.com Hızlı Kurulum
 
 ## 📋 Kurulum Seçenekleri
 
@@ -8,9 +8,9 @@
 
 ```bash
 # 1. Kurulum scriptini indir ve çalıştır
-wget https://raw.githubusercontent.com/yourusername/MrkTahsilatWeb/main/install_mrkotomotiv.sh
-chmod +x install_mrkotomotiv.sh
-sudo bash install_mrkotomotiv.sh
+wget https://raw.githubusercontent.com/azemyazilim/MrkTahsilatWeb/main/install_mrktahsilat.sh
+chmod +x install_mrktahsilat.sh
+sudo bash install_mrktahsilat.sh
 ```
 
 **Bu script şunları yapar:**

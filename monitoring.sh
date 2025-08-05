@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-PROJECT_DIR="/var/www/mrktahsilatweb"
+PROJECT_DIR="/var/www/mrktahsilat"
 LOG_FILE="/var/log/monitoring.log"
 ALERT_EMAIL="admin@yourdomain.com"
 WEBHOOK_URL=""  # Slack/Discord webhook URL
@@ -175,7 +175,7 @@ check_application_health() {
     fi
     
     # Check database connectivity
-    if sqlcmd -S localhost -U sa -P 'YourStrongPassword123!' -Q "SELECT 1" >/dev/null 2>&1; then
+    if sqlcmd -S localhost -U sa -P 'MrkTahsilat2024!' -Q "SELECT 1" >/dev/null 2>&1; then
         success "Database connection is working"
     else
         alert "Database connection failed"
@@ -212,9 +212,9 @@ check_logs() {
 
 # Check SSL certificate expiry
 check_ssl_certificate() {
-    local domain="mrkotomotiv.com"
+    local domain="mrktahsilat.com"
     
-    if [ ! -z "$domain" ] && [ "$domain" != "mrkotomotiv.com" ]; then
+    if [ ! -z "$domain" ] && [ "$domain" != "mrktahsilat.com" ]; then
         log "Checking SSL certificate for $domain..."
         
         expiry_date=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | \
