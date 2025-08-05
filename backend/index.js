@@ -100,6 +100,30 @@ app.get("/api/gunluk-tahsilat", async (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get("/api/health", async (req, res) => {
+  try {
+    // Database connection test
+    const pool = await mssql.connect(dbConfig);
+    await pool.request().query("SELECT 1 as status");
+    
+    res.json({
+      success: true,
+      message: "API is healthy",
+      timestamp: new Date().toISOString(),
+      database: "connected",
+      environment: process.env.NODE_ENV || "development"
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
