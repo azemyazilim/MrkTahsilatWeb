@@ -905,7 +905,7 @@ function TahsilatForm({ username }) {
         }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h5" sx={{ color: "#1976d2" }}>
-              Tahsilat Özeti
+              SENİN TAHSİLATİN
             </Typography>
             <Button 
               variant="outlined" 
