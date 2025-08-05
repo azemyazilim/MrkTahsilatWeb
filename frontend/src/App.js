@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Container, Box, TextField, Button, Typography, Alert, MenuItem, Autocomplete } from "@mui/material";
 import axios from "axios";
+import API_BASE_URL from "./api";
 
 function App() {
   const [username, setUsername] = useState("");
@@ -13,7 +14,7 @@ function App() {
     e.preventDefault();
     setError("");
     try {
-      const res = await axios.post("http://localhost:5000/api/login", { username, password });
+      const res = await axios.post(`${API_BASE_URL}/login`, { username, password });
       if (res.data.success) {
         setSuccess(true);
       }
@@ -596,7 +597,7 @@ function TahsilatForm({ username }) {
     console.log('Veriler yenileniyor...');
     
     // Cari listesi API çağrısı - kullanıcıya özel (SPECODE = username)
-    axios.get(`http://localhost:5000/api/clcard?username=${username}`).then(res => {
+    axios.get(`${API_BASE_URL}/clcard?username=${username}`).then(res => {
       // Backend {success: true, data: [...]} formatında döndürüyor
       const clcardsData = res.data.success ? res.data.data : [];
       setClcards(clcardsData);
@@ -607,7 +608,7 @@ function TahsilatForm({ username }) {
     });
     
     // Günlük tahsilat verilerini al - belirtilen plasiyer filtresi ile
-    axios.get(`http://localhost:5000/api/gunluk-tahsilat`).then(res => {
+    axios.get(`${API_BASE_URL}/gunluk-tahsilat`).then(res => {
       // Backend {success: true, data: [...]} formatında döndürüyor
       const tahsilatData = res.data.success ? res.data.data : [];
       console.log('API\'den gelen yeni ham veri (ilk 3 kayıt):', tahsilatData.slice(0, 3));

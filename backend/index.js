@@ -4,26 +4,34 @@ const cors = require('cors');
 const mssql = require('mssql');
 const path = require('path');
 
-// Load environment variables
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+// Load environment variables based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+require('dotenv').config({ path: path.join(__dirname, envFile) });
 
-// Debug: Print environment variables
-console.log('📊 Environment Debug:');
-console.log('   .env path:', path.join(__dirname, '.env'));
-console.log('   DB_SERVER:', process.env.DB_SERVER);
-console.log('   DB_PORT:', process.env.DB_PORT);
-console.log('   DB_DATABASE:', process.env.DB_DATABASE);
-console.log('   DB_USER:', process.env.DB_USER);
-console.log('');
+// Environment info (reduced for production)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('📊 Environment Debug:');
+  console.log('   .env path:', path.join(__dirname, envFile));
+  console.log('   DB_SERVER:', process.env.DB_SERVER);
+  console.log('   DB_PORT:', process.env.DB_PORT);
+  console.log('   DB_DATABASE:', process.env.DB_DATABASE);
+  console.log('   DB_USER:', process.env.DB_USER);
+  console.log('');
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
-}));
+// CORS Configuration for production
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://mrktahsilat.com', 'https://www.mrktahsilat.com']
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Logging middleware

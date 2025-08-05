@@ -4,8 +4,9 @@
   "description": "MrkTahsilatWeb Backend API",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node index.js"
+    "start": "NODE_ENV=production node index.js",
+    "dev": "NODE_ENV=development node index.js",
+    "prod": "NODE_ENV=production node index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
