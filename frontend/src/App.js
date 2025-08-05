@@ -702,6 +702,14 @@ function TahsilatForm({ username }) {
             boxShadow: 4
           }}>
           <Alert severity="success" sx={{ mb: 2 }}>Giriş başarılı şekilde yapıldı</Alert>
+          <Typography variant="h4" align="center" sx={{ 
+            mb: 3, 
+            color: "#1976d2", 
+            fontWeight: "bold",
+            textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
+          }}>
+            MRK TAHSİLAT SAYFASINA HOŞGELDİNİZ
+          </Typography>
           <Typography variant="h5" align="center" sx={{ mb: 3, color: "#1976d2" }}>
             Tahsilat Formu <span style={{ fontSize: 18, color: '#555', marginLeft: 12 }}>({username})</span>
           </Typography>
@@ -903,6 +911,18 @@ function TahsilatForm({ username }) {
           borderRadius: 3, 
           boxShadow: 4
         }}>
+          <Typography variant="h4" align="center" sx={{ 
+            mb: 4, 
+            color: "#d32f2f", 
+            fontWeight: "bold",
+            textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
+            border: "2px solid #d32f2f",
+            borderRadius: 2,
+            padding: 2,
+            backgroundColor: "#fff"
+          }}>
+            MRK TAHSİLAT SAYFASINA HOŞGELDİNİZ
+          </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h5" sx={{ color: "#1976d2" }}>
               SENİN TAHSİLATİN
