@@ -701,7 +701,7 @@ function TahsilatForm({ username }) {
             borderRadius: 3, 
             boxShadow: 4
           }}>
-          <Alert severity="success" sx={{ mb: 2 }}>Giriş başarılı!</Alert>
+          <Alert severity="success" sx={{ mb: 2 }}>Giriş başarılı şekilde yapıldı</Alert>
           <Typography variant="h5" align="center" sx={{ mb: 3, color: "#1976d2" }}>
             Tahsilat Formu <span style={{ fontSize: 18, color: '#555', marginLeft: 12 }}>({username})</span>
           </Typography>
