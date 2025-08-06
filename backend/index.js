@@ -213,18 +213,55 @@ app.get('/api/stats', async (req, res) => {
     const customerCount = await pool.request()
       .query('SELECT COUNT(*) as count FROM LG_002_CLCARD');
     
-    const totalAmount = await pool.request()
-      .query('SELECT SUM(Tutar) as total FROM GunlukTahsilat_V WHERE CAST(Tarih as DATE) = CAST(GETDATE() AS DATE)');
+    // Günlük toplam (bugün) - Türkiye saat dilimi ile
+    const todayQuery = `
+      SELECT SUM(Tutar) as total, COUNT(*) as count 
+      FROM GunlukTahsilat_V 
+      WHERE CAST(Tarih as DATE) = CAST(GETDATE() AS DATE)
+      AND Plasiyer IN ('EYÜP', 'ALİ', 'YİĞİT', 'AZİZ', 'GÖRKEM', 'ATAKAN', 'SÜLEYMAN', 'HASAN')
+    `;
     
-    const todayCount = await pool.request()
-      .query('SELECT COUNT(*) as count FROM GunlukTahsilat_V WHERE CAST(Tarih as DATE) = CAST(GETDATE() AS DATE)');
+    const todayResult = await pool.request().query(todayQuery);
+    
+    // Haftalık toplam (bu hafta Pazartesi'den itibaren)
+    const weeklyQuery = `
+      SELECT SUM(Tutar) as total, COUNT(*) as count 
+      FROM GunlukTahsilat_V 
+      WHERE Tarih >= DATEADD(DAY, 1 - DATEPART(WEEKDAY, GETDATE()), CAST(GETDATE() AS DATE))
+      AND Tarih <= GETDATE()
+      AND Plasiyer IN ('EYÜP', 'ALİ', 'YİĞİT', 'AZİZ', 'GÖRKEM', 'ATAKAN', 'SÜLEYMAN', 'HASAN')
+    `;
+    
+    const weeklyResult = await pool.request().query(weeklyQuery);
+    
+    // Aylık toplam (bu ay)
+    const monthlyQuery = `
+      SELECT SUM(Tutar) as total, COUNT(*) as count 
+      FROM GunlukTahsilat_V 
+      WHERE YEAR(Tarih) = YEAR(GETDATE()) 
+      AND MONTH(Tarih) = MONTH(GETDATE())
+      AND Plasiyer IN ('EYÜP', 'ALİ', 'YİĞİT', 'AZİZ', 'GÖRKEM', 'ATAKAN', 'SÜLEYMAN', 'HASAN')
+    `;
+    
+    const monthlyResult = await pool.request().query(monthlyQuery);
     
     res.json({
       success: true,
       stats: {
         totalCustomers: customerCount.recordset[0].count,
-        todayTotal: totalAmount.recordset[0].total || 0,
-        todayCount: todayCount.recordset[0].count || 0,
+        
+        // Günlük istatistikler
+        todayTotal: todayResult.recordset[0].total || 0,
+        todayCount: todayResult.recordset[0].count || 0,
+        
+        // Haftalık istatistikler  
+        weeklyTotal: weeklyResult.recordset[0].total || 0,
+        weeklyCount: weeklyResult.recordset[0].count || 0,
+        
+        // Aylık istatistikler
+        monthlyTotal: monthlyResult.recordset[0].total || 0,
+        monthlyCount: monthlyResult.recordset[0].count || 0,
+        
         lastUpdate: new Date().toISOString()
       }
     });

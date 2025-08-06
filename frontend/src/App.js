@@ -45,8 +45,9 @@ function App() {
 function TahsilatForm({ username }) {
   // State tanımları
   const [gunlukTahsilat, setGunlukTahsilat] = useState([]);
-  const [filteredTahsilat, setFilteredTahsilat] = useState([]);
-  const [filters, setFilters] = useState({});
+  // Filtreleme kaldırıldı - basit görünüm için
+  // const [filteredTahsilat, setFilteredTahsilat] = useState([]);
+  // const [filters, setFilters] = useState({});
   const [clcards, setClcards] = useState([]);
   const [selectedClcard, setSelectedClcard] = useState("");
   const [evrakNo, setEvrakNo] = useState("");
@@ -113,28 +114,20 @@ function TahsilatForm({ username }) {
     }
   };
 
-  // Filtreleme fonksiyonu
-  const applyFilters = () => {
-    let filtered = gunlukTahsilat;
-    Object.keys(filters).forEach(column => {
-      if (filters[column] && filters[column].trim() !== '') {
-        filtered = filtered.filter(row => 
-          row[column] && row[column].toString().toLowerCase().includes(filters[column].toLowerCase())
-        );
-      }
-    });
-    setFilteredTahsilat(filtered);
-  };
+  // Filtreleme fonksiyonu - Artık kullanılmıyor (basit görünüm için kaldırıldı)
+  // const applyFilters = () => {
+  //   setFilteredTahsilat(gunlukTahsilat);
+  // };
 
-  // Filter değişikliği
-  const handleFilterChange = (column, value) => {
-    setFilters(prev => ({ ...prev, [column]: value }));
-  };
+  // Filter değişikliği - Artık kullanılmıyor
+  // const handleFilterChange = (column, value) => {
+  //   setFilters(prev => ({ ...prev, [column]: value }));
+  // };
 
-  // Filtre uygulama
-  React.useEffect(() => {
-    applyFilters();
-  }, [filters, gunlukTahsilat]);
+  // Filtre uygulama - Artık kullanılmıyor
+  // React.useEffect(() => {
+  //   applyFilters();
+  // }, [filters, gunlukTahsilat]);
 
   // Tutar formatlaması
   const formatCurrency = (value) => {
@@ -170,9 +163,9 @@ function TahsilatForm({ username }) {
     }
   };
 
-  // Toplam hesaplama - Filtrelenmiş veriler üzerinden (kullanıcıya özel)
+  // Toplam hesaplama - Tüm veriler üzerinden
   const calculateTotal = () => {
-    return filteredTahsilat.reduce((total, row) => {
+    return gunlukTahsilat.reduce((total, row) => {
       const tutar = parseFloat(row.Tutar) || 0;
       return total + tutar;
     }, 0);
@@ -183,114 +176,158 @@ function TahsilatForm({ username }) {
     return clcards.map(card => card.CODE);
   };
 
-  // Günlük toplam hesaplama (bugün) - Sadece kullanıcının cari kodları
-  const calculateDailyTotal = () => {
-    const today = new Date();
-    const todayStr = today.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }); // dd.MM.yyyy format
-    const userCariCodes = getUserCariCodes();
+  // Güvenli tarih parse fonksiyonu
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
     
-    console.log('Günlük hesaplama (kullanıcıya özel) - bugün:', todayStr);
-    console.log('Kullanıcının cari kodları:', userCariCodes);
-    
-    return gunlukTahsilat.reduce((total, row) => {
-      // Sadece kullanıcının cari kodlarına ait kayıtları hesapla
-      if (!userCariCodes.includes(row.CariKod)) {
-        return total;
-      }
-      
-      if (row.Tarih) {
-        // Backend'den dd.MM.yyyy formatında tarih geliyor
-        let normalizedDate = row.Tarih;
-        
-        // Eğer ISO format ise dd.MM.yyyy formatına çevir
-        if (row.Tarih.includes('T') || (row.Tarih.includes('-') && row.Tarih.length >= 10)) {
-          try {
-            const date = new Date(row.Tarih);
-            if (!isNaN(date.getTime())) {
-              normalizedDate = date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            }
-          } catch (e) {
-            console.warn('Tarih dönüştürme hatası:', row.Tarih);
+    try {
+      // dd.MM.yyyy formatı (backend'den gelen format)
+      if (dateString.includes('.')) {
+        const parts = dateString.split('.');
+        if (parts.length === 3) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1; // JavaScript ayları 0-based
+          const year = parseInt(parts[2], 10);
+          
+          // Geçerli tarih kontrolü
+          if (day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 1900 && year <= 2100) {
+            return new Date(year, month, day);
           }
         }
-        
-        if (normalizedDate === todayStr) {
-          const tutar = parseFloat(row.Tutar) || 0;
-          console.log('Günlük eşleşme bulundu:', { tarih: normalizedDate, tutar, cariKod: row.CariKod });
-          return total + tutar;
-        }
       }
-      return total;
-    }, 0);
+      // ISO format fallback (2025-08-01T00:00:00.000Z)
+      else if (dateString.includes('T')) {
+        return new Date(dateString);
+      }
+      // YYYY-MM-DD format fallback
+      else if (dateString.includes('-') && dateString.length >= 10) {
+        return new Date(dateString + 'T00:00:00');
+      }
+      
+      // Diğer formatlar için genel Date constructor
+      return new Date(dateString);
+    } catch (error) {
+      console.warn('Tarih parse hatası:', dateString, error);
+      return null;
+    }
   };
 
-  // Haftalık toplam hesaplama (bu hafta) - Sadece kullanıcının cari kodları
-  const calculateWeeklyTotal = () => {
-    const today = new Date();
-    const userCariCodes = getUserCariCodes();
+  // Tarihleri karşılaştırma fonksiyonu
+  const isSameDate = (date1, date2) => {
+    if (!date1 || !date2) return false;
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  };
+
+  // Bu haftayı hesaplama (Pazartesi başlangıçlı)
+  const getWeekRange = (date) => {
+    const dayOfWeek = date.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazar ise 6 gün geriye
     
-    // Pazartesi başlangıçlı hafta hesaplama
-    const dayOfWeek = today.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazar ise 6 gün geriye, diğer günler için günÜ-1
-    
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - daysToMonday);
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - daysToMonday);
     startOfWeek.setHours(0, 0, 0, 0);
     
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
-    console.log('Haftalık hesaplama (kullanıcıya özel):', {
+    return { startOfWeek, endOfWeek };
+  };
+
+  // Bu ayı kontrol etme
+  const isSameMonth = (date1, date2) => {
+    if (!date1 || !date2) return false;
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth();
+  };
+
+  // Günlük toplam hesaplama (bugün) - Sadece kullanıcının plasiyer adına göre
+  const calculateDailyTotal = () => {
+    const today = new Date();
+    
+    console.log('=== SENİN TAHSİLATİN - GÜNLÜK HESAPLAMA ===');
+    console.log('Kullanıcı:', username);
+    console.log('Günlük hesaplama (kullanıcının plasiyeri) - bugün:', today.toLocaleDateString('tr-TR'));
+    
+    let total = 0;
+    let matchedRecords = [];
+    
+    gunlukTahsilat.forEach((row, index) => {
+      // Sadece kullanıcının plasiyer adına ait kayıtları hesapla
+      if (row.Plasiyer !== username) {
+        return;
+      }
+      
+      const rowDate = parseDate(row.Tarih);
+      if (rowDate && isSameDate(rowDate, today)) {
+        const tutar = parseFloat(row.Tutar) || 0;
+        total += tutar;
+        matchedRecords.push({
+          index,
+          date: rowDate.toLocaleDateString('tr-TR'),
+          tutar,
+          originalDate: row.Tarih,
+          cariKod: row.CariKod,
+          plasiyer: row.Plasiyer
+        });
+        
+        console.log(`SENİN TAHSİLATİN Günlük - Kayıt ${index}:`, {
+          tarih: row.Tarih,
+          cariKod: row.CariKod,
+          tutar: tutar,
+          plasiyer: row.Plasiyer,
+          gunlukToplam: total
+        });
+      }
+    });
+    
+    console.log('SENİN TAHSİLATİN - Günlük eşleşen kayıtlar:', matchedRecords.length);
+    console.log('SENİN TAHSİLATİN - Günlük toplam (PLASIYER BAZINDA):', total);
+    
+    return total;
+  };
+
+  // Haftalık toplam hesaplama (bu hafta) - Sadece kullanıcının plasiyer adına göre
+  const calculateWeeklyTotal = () => {
+    const today = new Date();
+    const { startOfWeek, endOfWeek } = getWeekRange(today);
+    
+    console.log('=== SENİN TAHSİLATİN - HAFTALIK HESAPLAMA ===');
+    console.log('Haftalık hesaplama (kullanıcının plasiyeri):', {
       today: today.toLocaleDateString('tr-TR'),
       startOfWeek: startOfWeek.toLocaleDateString('tr-TR'),
       endOfWeek: endOfWeek.toLocaleDateString('tr-TR'),
-      userCariCodes: userCariCodes,
-      dayOfWeek,
-      daysToMonday
+      kullanici: username
     });
     
     let weeklyTotal = 0;
     let matchedRecords = [];
     
     gunlukTahsilat.forEach((row, index) => {
-      // Sadece kullanıcının cari kodlarına ait kayıtları hesapla
-      if (!userCariCodes.includes(row.CariKod)) {
+      // Sadece kullanıcının plasiyer adına ait kayıtları hesapla
+      if (row.Plasiyer !== username) {
         return;
       }
       
-      if (row.Tarih) {
-        let rowDate;
-        if (row.Tarih.includes('T')) {
-          rowDate = new Date(row.Tarih);
-        } else if (row.Tarih.includes('-')) {
-          rowDate = new Date(row.Tarih + 'T00:00:00');
-        } else if (row.Tarih.includes('.')) {
-          // dd.MM.yyyy formatı
-          const parts = row.Tarih.split('.');
-          if (parts.length === 3) {
-            rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
-          }
-        } else {
-          rowDate = new Date(row.Tarih);
-        }
-        
-        if (!isNaN(rowDate.getTime()) && rowDate >= startOfWeek && rowDate <= endOfWeek) {
-          const tutar = parseFloat(row.Tutar) || 0;
-          weeklyTotal += tutar;
-          matchedRecords.push({
-            index,
-            date: rowDate.toLocaleDateString('tr-TR'),
-            tutar,
-            originalDate: row.Tarih,
-            cariKod: row.CariKod
-          });
-        }
+      const rowDate = parseDate(row.Tarih);
+      if (rowDate && rowDate >= startOfWeek && rowDate <= endOfWeek) {
+        const tutar = parseFloat(row.Tutar) || 0;
+        weeklyTotal += tutar;
+        matchedRecords.push({
+          index,
+          date: rowDate.toLocaleDateString('tr-TR'),
+          tutar,
+          originalDate: row.Tarih,
+          cariKod: row.CariKod,
+          plasiyer: row.Plasiyer
+        });
       }
     });
     
-    console.log('Haftalık eşleşen kayıtlar (kullanıcıya özel):', matchedRecords);
-    console.log('Haftalık toplam (kullanıcıya özel):', weeklyTotal);
+    console.log('SENİN TAHSİLATİN - Haftalık eşleşen kayıtlar:', matchedRecords.length);
+    console.log('SENİN TAHSİLATİN - Haftalık toplam (PLASIYER BAZINDA):', weeklyTotal);
     
     return weeklyTotal;
   };
@@ -298,78 +335,77 @@ function TahsilatForm({ username }) {
   // Plasiyer bazında toplam hesaplama fonksiyonları
   const calculatePlasiyerTotals = () => {
     const plasiyerTotals = {};
+    const today = new Date();
+    const { startOfWeek, endOfWeek } = getWeekRange(today);
+    const userCariCodes = getUserCariCodes(); // Kullanıcının cari kodları
     
-    gunlukTahsilat.forEach(row => {
+    console.log('=== PLASİYER HESAPLAMA BAŞLIYOR ===');
+    console.log('Kullanıcı:', username);
+    console.log('Kullanıcının cari kodları:', userCariCodes);
+    console.log('Toplam tahsilat kaydı:', gunlukTahsilat.length);
+    
+    gunlukTahsilat.forEach((row, index) => {
       const plasiyer = row.Plasiyer || 'Bilinmeyen';
       
       if (!plasiyerTotals[plasiyer]) {
         plasiyerTotals[plasiyer] = {
           gunluk: 0,
           haftalik: 0,
-          aylik: 0
+          aylik: 0,
+          toplam_kayit: 0,
+          kullanici_kayit: 0
         };
       }
       
       const tutar = parseFloat(row.Tutar) || 0;
+      const rowDate = parseDate(row.Tarih);
       
-      // Tarihi bir kez dönüştür ve tüm hesaplamalarda kullan
-      if (row.Tarih) {
-        const today = new Date();
-        
-        // Tarih dönüştürme - tek seferlik
-        let rowDate;
-        if (row.Tarih.includes('T')) {
-          rowDate = new Date(row.Tarih);
-        } else if (row.Tarih.includes('-')) {
-          rowDate = new Date(row.Tarih + 'T00:00:00');
-        } else if (row.Tarih.includes('.')) {
-          const parts = row.Tarih.split('.');
-          if (parts.length === 3) {
-            rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      // Tüm plasiyer verilerini say
+      plasiyerTotals[plasiyer].toplam_kayit++;
+      
+      // Kullanıcının cari kodlarına ait kayıtları say
+      if (userCariCodes.includes(row.CariKod)) {
+        plasiyerTotals[plasiyer].kullanici_kayit++;
+      }
+      
+      if (rowDate) {
+        // Günlük hesaplama - TÜM VERİLER (kullanıcı filtresi YOK)
+        if (isSameDate(rowDate, today)) {
+          plasiyerTotals[plasiyer].gunluk += tutar;
+          
+          // EYÜP için debug log
+          if (plasiyer === 'EYÜP') {
+            console.log(`EYÜP Günlük - Kayıt ${index}:`, {
+              tarih: row.Tarih,
+              cariKod: row.CariKod,
+              tutar: tutar,
+              kullanicininMi: userCariCodes.includes(row.CariKod),
+              gunlukToplam: plasiyerTotals[plasiyer].gunluk
+            });
           }
-        } else {
-          rowDate = new Date(row.Tarih);
         }
         
-        // Geçerli tarih kontrolü
-        if (!isNaN(rowDate.getTime())) {
-          // Günlük hesaplama - dd.MM.yyyy formatında karşılaştır
-          const todayStr = today.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-          let normalizedDate = row.Tarih;
-          
-          // Eğer ISO format ise dd.MM.yyyy formatına çevir
-          if (row.Tarih.includes('T') || (row.Tarih.includes('-') && row.Tarih.length >= 10)) {
-            normalizedDate = rowDate.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-          }
-          
-          if (normalizedDate === todayStr) {
-            plasiyerTotals[plasiyer].gunluk += tutar;
-          }
-          
-          // Haftalık hesaplama
-          const dayOfWeek = today.getDay();
-          const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-          const startOfWeek = new Date(today);
-          startOfWeek.setDate(today.getDate() - daysToMonday);
-          startOfWeek.setHours(0, 0, 0, 0);
-          const endOfWeek = new Date(startOfWeek);
-          endOfWeek.setDate(startOfWeek.getDate() + 6);
-          endOfWeek.setHours(23, 59, 59, 999);
-          
-          if (rowDate >= startOfWeek && rowDate <= endOfWeek) {
-            plasiyerTotals[plasiyer].haftalik += tutar;
-          }
-          
-          // Aylık hesaplama
-          const currentMonth = today.getMonth();
-          const currentYear = today.getFullYear();
-          
-          if (rowDate.getMonth() === currentMonth && rowDate.getFullYear() === currentYear) {
-            plasiyerTotals[plasiyer].aylik += tutar;
-          }
+        // Haftalık hesaplama - TÜM VERİLER (kullanıcı filtresi YOK)
+        if (rowDate >= startOfWeek && rowDate <= endOfWeek) {
+          plasiyerTotals[plasiyer].haftalik += tutar;
+        }
+        
+        // Aylık hesaplama - TÜM VERİLER (kullanıcı filtresi YOK)
+        if (isSameMonth(rowDate, today)) {
+          plasiyerTotals[plasiyer].aylik += tutar;
         }
       }
     });
+    
+    // EYÜP için özet log
+    if (plasiyerTotals['EYÜP']) {
+      console.log('=== EYÜP PLASİYER ÖZETİ ===');
+      console.log('Toplam kayıt sayısı:', plasiyerTotals['EYÜP'].toplam_kayit);
+      console.log('Kullanıcının cari kodlarına ait kayıt:', plasiyerTotals['EYÜP'].kullanici_kayit);
+      console.log('Günlük toplam (TÜM VERİLER):', plasiyerTotals['EYÜP'].gunluk);
+      console.log('Haftalık toplam (TÜM VERİLER):', plasiyerTotals['EYÜP'].haftalik);
+      console.log('Aylık toplam (TÜM VERİLER):', plasiyerTotals['EYÜP'].aylik);
+    }
     
     return plasiyerTotals;
   };
@@ -377,149 +413,143 @@ function TahsilatForm({ username }) {
   // Plasiyer tablosu için genel toplamlar (tüm plasiyer verileri)
   const calculateGeneralDailyTotal = () => {
     const today = new Date();
-    const todayStr = today.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }); // dd.MM.yyyy format
     
-    console.log('Genel günlük hesaplama - bugün:', todayStr);
+    console.log('Genel günlük hesaplama - bugün:', today.toLocaleDateString('tr-TR'));
     
-    return gunlukTahsilat.reduce((total, row) => {
-      if (row.Tarih) {
-        // Backend'den dd.MM.yyyy formatında tarih geliyor
-        let normalizedDate = row.Tarih;
-        
-        // Eğer ISO format ise dd.MM.yyyy formatına çevir
-        if (row.Tarih.includes('T') || (row.Tarih.includes('-') && row.Tarih.length >= 10)) {
-          try {
-            const date = new Date(row.Tarih);
-            if (!isNaN(date.getTime())) {
-              normalizedDate = date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            }
-          } catch (e) {
-            console.warn('Tarih dönüştürme hatası:', row.Tarih);
-          }
-        }
-        
-        if (normalizedDate === todayStr) {
-          const tutar = parseFloat(row.Tutar) || 0;
-          console.log('Genel günlük eşleşme bulundu:', { tarih: normalizedDate, tutar, cariKod: row.CariKod });
-          return total + tutar;
-        }
+    let total = 0;
+    let matchedRecords = [];
+    
+    gunlukTahsilat.forEach((row, index) => {
+      const rowDate = parseDate(row.Tarih);
+      if (rowDate && isSameDate(rowDate, today)) {
+        const tutar = parseFloat(row.Tutar) || 0;
+        total += tutar;
+        matchedRecords.push({
+          index,
+          date: rowDate.toLocaleDateString('tr-TR'),
+          tutar,
+          originalDate: row.Tarih,
+          cariKod: row.CariKod,
+          plasiyer: row.Plasiyer
+        });
       }
-      return total;
-    }, 0);
+    });
+    
+    console.log('Genel günlük eşleşen kayıtlar:', matchedRecords);
+    console.log('Genel günlük toplam:', total);
+    
+    return total;
   };
 
   const calculateGeneralWeeklyTotal = () => {
     const today = new Date();
-    const dayOfWeek = today.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const { startOfWeek, endOfWeek } = getWeekRange(today);
     
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - daysToMonday);
-    startOfWeek.setHours(0, 0, 0, 0);
+    console.log('Genel haftalık hesaplama:', {
+      today: today.toLocaleDateString('tr-TR'),
+      startOfWeek: startOfWeek.toLocaleDateString('tr-TR'),
+      endOfWeek: endOfWeek.toLocaleDateString('tr-TR')
+    });
     
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
+    let total = 0;
+    let matchedRecords = [];
     
-    return gunlukTahsilat.reduce((total, row) => {
-      if (row.Tarih) {
-        let rowDate;
-        if (row.Tarih.includes('T')) {
-          rowDate = new Date(row.Tarih);
-        } else if (row.Tarih.includes('-')) {
-          rowDate = new Date(row.Tarih + 'T00:00:00');
-        } else if (row.Tarih.includes('.')) {
-          const parts = row.Tarih.split('.');
-          if (parts.length === 3) {
-            rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
-          }
-        } else {
-          rowDate = new Date(row.Tarih);
-        }
-        
-        if (!isNaN(rowDate.getTime()) && rowDate >= startOfWeek && rowDate <= endOfWeek) {
-          const tutar = parseFloat(row.Tutar) || 0;
-          return total + tutar;
-        }
+    gunlukTahsilat.forEach((row, index) => {
+      const rowDate = parseDate(row.Tarih);
+      if (rowDate && rowDate >= startOfWeek && rowDate <= endOfWeek) {
+        const tutar = parseFloat(row.Tutar) || 0;
+        total += tutar;
+        matchedRecords.push({
+          index,
+          date: rowDate.toLocaleDateString('tr-TR'),
+          tutar,
+          originalDate: row.Tarih,
+          cariKod: row.CariKod,
+          plasiyer: row.Plasiyer
+        });
       }
-      return total;
-    }, 0);
+    });
+    
+    console.log('Genel haftalık eşleşen kayıtlar:', matchedRecords);
+    console.log('Genel haftalık toplam:', total);
+    
+    return total;
   };
 
   const calculateGeneralMonthlyTotal = () => {
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
     
-    return gunlukTahsilat.reduce((total, row) => {
-      if (row.Tarih) {
-        let rowDate;
-        if (row.Tarih.includes('T')) {
-          rowDate = new Date(row.Tarih);
-        } else if (row.Tarih.includes('-')) {
-          rowDate = new Date(row.Tarih + 'T00:00:00');
-        } else if (row.Tarih.includes('.')) {
-          const parts = row.Tarih.split('.');
-          if (parts.length === 3) {
-            rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
-          }
-        } else {
-          rowDate = new Date(row.Tarih);
-        }
-        
-        if (!isNaN(rowDate.getTime()) && 
-            rowDate.getMonth() === currentMonth && 
-            rowDate.getFullYear() === currentYear) {
-          const tutar = parseFloat(row.Tutar) || 0;
-          return total + tutar;
-        }
+    console.log('Genel aylık hesaplama:', {
+      today: today.toLocaleDateString('tr-TR'),
+      month: today.getMonth() + 1,
+      year: today.getFullYear()
+    });
+    
+    let total = 0;
+    let matchedRecords = [];
+    
+    gunlukTahsilat.forEach((row, index) => {
+      const rowDate = parseDate(row.Tarih);
+      if (rowDate && isSameMonth(rowDate, today)) {
+        const tutar = parseFloat(row.Tutar) || 0;
+        total += tutar;
+        matchedRecords.push({
+          index,
+          date: rowDate.toLocaleDateString('tr-TR'),
+          tutar,
+          originalDate: row.Tarih,
+          cariKod: row.CariKod,
+          plasiyer: row.Plasiyer
+        });
       }
-      return total;
-    }, 0);
+    });
+    
+    console.log('Genel aylık eşleşen kayıtlar:', matchedRecords);
+    console.log('Genel aylık toplam:', total);
+    
+    return total;
   };
 
-  // Aylık toplam hesaplama (bu ay) - Sadece kullanıcının cari kodları
+  // Aylık toplam hesaplama (bu ay) - Sadece kullanıcının plasiyer adına göre
   const calculateMonthlyTotal = () => {
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const userCariCodes = getUserCariCodes();
     
-    return gunlukTahsilat.reduce((total, row) => {
-      // Sadece kullanıcının cari kodlarına ait kayıtları hesapla
-      if (!userCariCodes.includes(row.CariKod)) {
-        return total;
+    console.log('=== SENİN TAHSİLATİN - AYLIK HESAPLAMA ===');
+    console.log('Aylık hesaplama (kullanıcının plasiyeri):', {
+      today: today.toLocaleDateString('tr-TR'),
+      month: today.getMonth() + 1, // 1-based month for display
+      year: today.getFullYear(),
+      kullanici: username
+    });
+    
+    let monthlyTotal = 0;
+    let matchedRecords = [];
+    
+    gunlukTahsilat.forEach((row, index) => {
+      // Sadece kullanıcının plasiyer adına ait kayıtları hesapla
+      if (row.Plasiyer !== username) {
+        return;
       }
       
-      if (row.Tarih) {
-        // Tarih string'ini Date nesnesine çevir
-        let rowDate;
-        if (row.Tarih.includes('T')) {
-          // ISO format (2025-08-01T00:00:00.000Z)
-          rowDate = new Date(row.Tarih);
-        } else if (row.Tarih.includes('-')) {
-          // YYYY-MM-DD format
-          rowDate = new Date(row.Tarih + 'T00:00:00');
-        } else if (row.Tarih.includes('.')) {
-          // dd.MM.yyyy formatı
-          const parts = row.Tarih.split('.');
-          if (parts.length === 3) {
-            rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
-          }
-        } else {
-          // Diğer formatlar
-          rowDate = new Date(row.Tarih);
-        }
-        
-        if (!isNaN(rowDate.getTime()) && 
-            rowDate.getMonth() === currentMonth && 
-            rowDate.getFullYear() === currentYear) {
-          const tutar = parseFloat(row.Tutar) || 0;
-          return total + tutar;
-        }
+      const rowDate = parseDate(row.Tarih);
+      if (rowDate && isSameMonth(rowDate, today)) {
+        const tutar = parseFloat(row.Tutar) || 0;
+        monthlyTotal += tutar;
+        matchedRecords.push({
+          index,
+          date: rowDate.toLocaleDateString('tr-TR'),
+          tutar,
+          originalDate: row.Tarih,
+          cariKod: row.CariKod,
+          plasiyer: row.Plasiyer
+        });
       }
-      return total;
-    }, 0);
+    });
+    
+    console.log('SENİN TAHSİLATİN - Aylık eşleşen kayıtlar:', matchedRecords.length);
+    console.log('SENİN TAHSİLATİN - Aylık toplam (PLASIYER BAZINDA):', monthlyTotal);
+    
+    return monthlyTotal;
   };
 
   // Mevcut ayın verilerini filtrele
@@ -624,13 +654,12 @@ function TahsilatForm({ username }) {
       });
       
       setGunlukTahsilat(sortedData);
-      setFilteredTahsilat(sortedData); // İlk yüklemede filtresiz göster
+      // Artık filtreleme yok, sadece ana veriyi kullanıyoruz
       
       console.log('Tahsilat verileri yenilendi ve ID DESC sıralandı:', sortedData.length, 'kayıt');
     }).catch(err => {
       console.error('Günlük tahsilat verileri yenilenirken hata:', err);
       setGunlukTahsilat([]); // Hata durumunda boş array
-      setFilteredTahsilat([]);
     });
   };
 
@@ -1079,60 +1108,113 @@ function TahsilatForm({ username }) {
           ) : (
             <>
               <Box sx={{ maxHeight: '70vh', overflowY: 'auto', position: 'relative', width: '100%' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 4, tableLayout: 'fixed' }}>
+                <table className="auto-layout-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 4 }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                   <tr>
                     {Object.keys(gunlukTahsilat[0]).map(col => {
-                      // Responsive kolon genişliklerini belirle (yüzde olarak)
-                      let width = '8%';
-                      if (col === 'CariUnvan') width = '18%';
-                      else if (col === 'TahsilatTuru') width = '10%';
-                      else if (col === 'BANKAADI') width = '10%';
-                      else if (col === 'Tutar') width = '8%';
-                      else if (col === 'EklemeTarihi') width = '10%';
-                      else if (col === 'CariKod') width = '8%';
-                      else if (col === 'EvrakNo') width = '8%';
-                      else if (col === 'Bölge') width = '7%';
-                      else if (col === 'Plasiyer') width = '8%';
-                      else if (col === 'Durum') width = '7%';
-                      else if (col === 'Tarih') width = '8%';
-                      else if (col === 'ID') width = '5%';
+                      // Başlangıç kolon genişliklerini belirle
+                      let width = '120px';
+                      if (col === 'CariUnvan') width = '250px';
+                      else if (col === 'TahsilatTuru') width = '140px';
+                      else if (col === 'BANKAADI') width = '140px';
+                      else if (col === 'Tutar') width = '120px';
+                      else if (col === 'EklemeTarihi') width = '150px';
+                      else if (col === 'CariKod') width = '120px';
+                      else if (col === 'EvrakNo') width = '120px';
+                      else if (col === 'Bölge') width = '100px';
+                      else if (col === 'Plasiyer') width = '120px';
+                      else if (col === 'Durum') width = '100px';
+                      else if (col === 'Tarih') width = '110px';
+                      else if (col === 'ID') width = '80px';
                       
                       return (
-                        <th key={col} style={{ 
-                          padding: '4px 2px', 
-                          borderBottom: '2px solid #1976d2', 
-                          background: '#f5f5f5', 
-                          color: '#1976d2', 
-                          fontSize: '11px', 
-                          fontWeight: 600, 
-                          width: width,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          <div style={{ marginBottom: '4px' }}>{col}</div>
-                          <input
-                            type="text"
-                            placeholder={`Filtre...`}
-                            value={filters[col] || ''}
-                            onChange={(e) => handleFilterChange(col, e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '2px 3px',
-                              fontSize: '10px',
-                              border: '1px solid #ddd',
-                              borderRadius: '3px',
-                              background: '#fff',
-                              boxSizing: 'border-box'
-                            }}
-                          />
+                        <th key={col} 
+                            className="resizable-table" 
+                            style={{ 
+                              padding: '12px 8px', 
+                              borderBottom: '3px solid #1976d2', 
+                              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)', 
+                              color: '#fff', 
+                              fontSize: '13px', 
+                              fontWeight: 700, 
+                              width: width,
+                              minWidth: '60px',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              textAlign: 'center',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                              cursor: 'default',
+                              userSelect: 'none'
+                            }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            height: '100%'
+                          }}>
+                            <span style={{ flex: 1, textAlign: 'center' }}>{col}</span>
+                            {/* Kolon resize handle - daha görünür */}
+                            <div 
+                              className="resize-handle"
+                              title="⟷ Sürükleyerek kolon genişliğini ayarlayın"
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top: 0,
+                                height: '100%',
+                                width: '8px',
+                                cursor: 'col-resize',
+                                backgroundColor: 'rgba(255,255,255,0.3)',
+                                borderRight: '2px solid rgba(255,255,255,0.5)',
+                                transition: 'all 0.2s ease',
+                                zIndex: 10
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = 'rgba(255,255,255,0.5)';
+                                e.target.style.borderRight = '2px solid #fff';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                                e.target.style.borderRight = '2px solid rgba(255,255,255,0.5)';
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                const startX = e.clientX;
+                                const th = e.target.closest('th');
+                                const startWidth = th.offsetWidth;
+                                
+                                // Resize sırasında body'e class ekle
+                                document.body.classList.add('resizing');
+                                
+                                const handleMouseMove = (e) => {
+                                  const newWidth = startWidth + (e.clientX - startX);
+                                  if (newWidth > 60) { // Minimum genişlik 60px
+                                    th.style.width = newWidth + 'px';
+                                    th.style.minWidth = newWidth + 'px';
+                                  }
+                                };
+                                
+                                const handleMouseUp = () => {
+                                  document.removeEventListener('mousemove', handleMouseMove);
+                                  document.removeEventListener('mouseup', handleMouseUp);
+                                  document.body.classList.remove('resizing');
+                                };
+                                
+                                document.addEventListener('mousemove', handleMouseMove);
+                                document.addEventListener('mouseup', handleMouseUp);
+                              }}
+                            />
+                          </div>
                         </th>
                       );
                     })}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTahsilat.length === 0 ? (
+                  {gunlukTahsilat.length === 0 ? (
                     <tr>
                       <td colSpan={Object.keys(gunlukTahsilat[0]).length} style={{ 
                         padding: '20px', 
@@ -1141,38 +1223,36 @@ function TahsilatForm({ username }) {
                         fontStyle: 'italic',
                         backgroundColor: '#f9f9f9'
                       }}>
-                        Filtreleme kriterlerinize uygun kayıt bulunamadı.
+                        Veri bulunamadı.
                       </td>
                     </tr>
                   ) : (
-                    filteredTahsilat.map((row, i) => (
-                      <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                    gunlukTahsilat.map((row, i) => (
+                      <tr key={i} style={{ 
+                        backgroundColor: i % 2 === 0 ? '#fff' : '#f9f9f9',
+                        transition: 'background-color 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: '#e3f2fd'
+                        }
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.closest('tr').style.backgroundColor = '#e3f2fd';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.closest('tr').style.backgroundColor = i % 2 === 0 ? '#fff' : '#f9f9f9';
+                      }}
+                      >
                         {Object.entries(row).map(([key, val], j) => {
-                          // Responsive kolon genişliklerini belirle (yüzde olarak)
-                          let width = '8%';
-                          if (key === 'CariUnvan') width = '18%';
-                          else if (key === 'TahsilatTuru') width = '10%';
-                          else if (key === 'BANKAADI') width = '10%';
-                          else if (key === 'Tutar') width = '8%';
-                          else if (key === 'EklemeTarihi') width = '10%';
-                          else if (key === 'CariKod') width = '8%';
-                          else if (key === 'EvrakNo') width = '8%';
-                          else if (key === 'Bölge') width = '7%';
-                          else if (key === 'Plasiyer') width = '8%';
-                          else if (key === 'Durum') width = '7%';
-                          else if (key === 'Tarih') width = '8%';
-                          else if (key === 'ID') width = '5%';
-                          
                           return (
                             <td key={j} style={{ 
-                              padding: '4px 2px', 
+                              padding: '8px 6px', 
                               borderBottom: '1px solid #eee', 
-                              fontSize: '11px',
-                              width: width,
+                              fontSize: '12px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
-                              textAlign: key === 'Tutar' ? 'right' : 'left'
+                              textAlign: key === 'Tutar' ? 'right' : 'left',
+                              color: '#333'
                             }}>
                               <span title={
                                 key === 'Tutar' ? formatCurrency(val) : 
@@ -1196,44 +1276,30 @@ function TahsilatForm({ username }) {
                 bottom: 0,
                 width: '100%',
                 backgroundColor: '#fff',
-                borderTop: '2px solid #1976d2',
+                borderTop: '3px solid #1976d2',
                 zIndex: 2,
-                boxShadow: '0 -2px 4px rgba(0,0,0,0.1)'
+                boxShadow: '0 -4px 8px rgba(0,0,0,0.15)'
               }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <tbody>
-                    <tr style={{ backgroundColor: '#e3f2fd' }}>
+                    <tr style={{ backgroundColor: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
                       {Object.keys(gunlukTahsilat[0]).map((col, index) => {
-                        // Responsive kolon genişliklerini belirle (yüzde olarak)
-                        let width = '8%';
-                        if (col === 'CariUnvan') width = '18%';
-                        else if (col === 'TahsilatTuru') width = '10%';
-                        else if (col === 'BANKAADI') width = '10%';
-                        else if (col === 'Tutar') width = '8%';
-                        else if (col === 'EklemeTarihi') width = '10%';
-                        else if (col === 'CariKod') width = '8%';
-                        else if (col === 'EvrakNo') width = '8%';
-                        else if (col === 'Bölge') width = '7%';
-                        else if (col === 'Plasiyer') width = '8%';
-                        else if (col === 'Durum') width = '7%';
-                        else if (col === 'Tarih') width = '8%';
-                        else if (col === 'ID') width = '5%';
-                        
                         return (
                           <td key={index} style={{ 
-                            padding: '6px 2px', 
-                            fontSize: '11px',
+                            padding: '10px 8px', 
+                            fontSize: '13px',
                             fontWeight: 'bold',
                             textAlign: col === 'Tutar' ? 'right' : 'center',
                             color: '#1976d2',
-                            width: width,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            borderBottom: '1px solid #1976d2'
+                            borderBottom: '1px solid #1976d2',
+                            background: index === 0 ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)' : 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                            color: index === 0 ? '#fff' : '#1976d2'
                           }}>
                             {col === 'Tutar' ? formatCurrency(calculateTotal()) : 
-                             index === 0 ? 'TOPLAM' : ''}
+                             index === 0 ? '📊 TOPLAM' : ''}
                           </td>
                         );
                       })}
@@ -1243,19 +1309,17 @@ function TahsilatForm({ username }) {
               </div>
             </Box>
 
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="caption" sx={{ color: '#666' }}>
-                  Toplam {gunlukTahsilat.length} kayıttan {filteredTahsilat.length} tanesi gösteriliyor
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Typography variant="body2" sx={{ 
+                  color: '#1976d2', 
+                  fontWeight: 600,
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                  borderRadius: 2,
+                  border: '1px solid #1976d2'
+                }}>
+                  📋 Toplam {gunlukTahsilat.length} kayıt gösteriliyor • Kolon genişliklerini ayarlamak için sağ kenarları sürükleyin ⟷
                 </Typography>
-                {filteredTahsilat.length !== gunlukTahsilat.length && (
-                  <Button 
-                    size="small" 
-                    onClick={() => setFilters({})}
-                    sx={{ fontSize: '11px', padding: '2px 8px' }}
-                  >
-                    Filtreleri Temizle
-                  </Button>
-                )}
               </Box>
             </>
           )}

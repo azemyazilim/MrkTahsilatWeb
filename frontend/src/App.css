@@ -2,3 +2,92 @@
   text-align: center;
   padding: 20px;
 }
+
+/* Tablo kolon resize stilleri - Geliştirilmiş */
+.resizable-table th {
+  position: relative;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.resizable-table th:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 8px;
+  cursor: col-resize;
+  background: rgba(255,255,255,0.3);
+  border-right: 2px solid rgba(255,255,255,0.5);
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover {
+  background: rgba(255,255,255,0.6) !important;
+  border-right: 2px solid #fff !important;
+  width: 10px;
+  box-shadow: 0 0 8px rgba(255,255,255,0.8);
+}
+
+.resize-handle:active {
+  background: rgba(255,255,255,0.8) !important;
+  border-right: 3px solid #fff !important;
+  width: 12px;
+  box-shadow: 0 0 12px rgba(255,255,255,1);
+}
+
+/* Resize sırasında text seçimini engelle */
+.resizing {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  cursor: col-resize !important;
+}
+
+.resizing * {
+  cursor: col-resize !important;
+}
+
+/* Tablo genişlik ayarları */
+.auto-layout-table {
+  table-layout: auto !important;
+  width: 100%;
+  min-width: 1200px; /* Minimum tablo genişliği artırıldı */
+}
+
+/* Hover efektleri */
+.auto-layout-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.auto-layout-table tbody tr:hover {
+  background-color: #e3f2fd !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Resize ipucu animasyonu */
+@keyframes resizeHint {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(1.2); }
+}
+
+.resize-handle:hover::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 20px;
+  background: #fff;
+  animation: resizeHint 1s ease-in-out infinite;
+}
