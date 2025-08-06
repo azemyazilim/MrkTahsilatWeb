@@ -114,6 +114,57 @@ function TahsilatForm({ username }) {
     }
   };
 
+  // OCR ile evrak bilgilerini çıkar
+  const handleOCRExtract = async () => {
+    if (!selectedImage) {
+      alert('Önce bir resim seçiniz!');
+      return;
+    }
+
+    try {
+      console.log('🔍 OCR işlemi başlatılıyor...');
+      
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      
+      const response = await axios.post(`${API_BASE_URL}/ocr-extract`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.success) {
+        const extracted = response.data.data.extractedData;
+        console.log('✅ OCR sonucu:', extracted);
+
+        // Form alanlarını otomatik doldur
+        if (extracted.evrakNo) {
+          setEvrakNo(extracted.evrakNo);
+        }
+        if (extracted.tutar) {
+          setTutar(extracted.tutar);
+        }
+        if (extracted.tarih) {
+          // Tarih formatını yyyy-MM-dd'ye çevir
+          const [gun, ay, yil] = extracted.tarih.split('.');
+          const formattedDate = `${yil}-${ay.padStart(2, '0')}-${gun.padStart(2, '0')}`;
+          setTarih(formattedDate);
+        }
+        if (extracted.odemeSecenegi) {
+          setTahsilatTuru(extracted.odemeSecenegi);
+        }
+
+        alert(`✅ OCR Tamamlandı!\n\n📄 Evrak No: ${extracted.evrakNo || 'Bulunamadı'}\n💰 Tutar: ${extracted.tutar || 'Bulunamadı'}\n📅 Tarih: ${extracted.tarih || 'Bulunamadı'}\n💳 Ödeme: ${extracted.odemeSecenegi || 'Bulunamadı'}\n\n🎯 Güven: %${extracted.confidence}`);
+      } else {
+        throw new Error(response.data.message);
+      }
+
+    } catch (error) {
+      console.error('❌ OCR hatası:', error);
+      alert(`❌ OCR işlemi başarısız: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
   // Filtreleme fonksiyonu - Artık kullanılmıyor (basit görünüm için kaldırıldı)
   // const applyFilters = () => {
   //   setFilteredTahsilat(gunlukTahsilat);
@@ -669,7 +720,7 @@ function TahsilatForm({ username }) {
   }, [username]);
 
   // Form submit
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Form verilerini topla
@@ -688,21 +739,61 @@ function TahsilatForm({ username }) {
     
     console.log('Form verileri:', formData);
     
-    if (selectedImage) {
-      alert(`Tahsilat kaydedildi!\nResim: ${selectedImage.name} (${(selectedImage.size / 1024).toFixed(1)} KB)`);
-    } else {
-      alert("Tahsilat kaydedildi!");
+    try {
+      // 1. Önce tahsilat kaydını oluştur (burada sizin mevcut tahsilat kaydetme kodunuz gelecek)
+      console.log('💾 Tahsilat kaydı oluşturuluyor...');
+      
+      // TODO: Gerçek tahsilat kaydetme API'nizi buraya ekleyin
+      // const tahsilatResponse = await axios.post(`${API_BASE_URL}/save-tahsilat`, formData);
+      // const tahsilatId = tahsilatResponse.data.tahsilatId;
+      
+      // Şimdilik mock tahsilatId - gerçek implementasyonda yukarıdaki satırları kullanın
+      const tahsilatId = Date.now(); // Geçici mock ID
+      console.log('✅ Tahsilat kaydı oluşturuldu, ID:', tahsilatId);
+      
+      // 2. Eğer resim seçilmişse, TahsilatID ile birlikte yükle
+      if (selectedImage) {
+        console.log('📸 Resim yükleniyor...', selectedImage.name);
+        
+        const imageFormData = new FormData();
+        imageFormData.append('image', selectedImage);
+        imageFormData.append('username', username);
+        imageFormData.append('tahsilatId', tahsilatId); // ✨ TahsilatID ile birlikte
+        
+        const uploadResponse = await axios.post(`${API_BASE_URL}/upload-image`, imageFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        if (uploadResponse.data.success) {
+          console.log('✅ Resim başarıyla yüklendi:', uploadResponse.data.data);
+        } else {
+          throw new Error(uploadResponse.data.message || 'Resim yükleme başarısız');
+        }
+      }
+      
+      // 3. Başarı mesajı göster
+      if (selectedImage) {
+        alert(`✅ Tahsilat ve resim başarıyla kaydedildi!\n\n📸 Resim: ${selectedImage.name}\n📏 Boyut: ${(selectedImage.size / 1024).toFixed(1)} KB\n🆔 Tahsilat ID: ${tahsilatId}`);
+      } else {
+        alert(`✅ Tahsilat kaydedildi!\n🆔 Tahsilat ID: ${tahsilatId}`);
+      }
+      
+      // Form'u temizle
+      setSelectedClcard("");
+      setEvrakNo("");
+      setTahsilatTuru("");
+      setBanka("");
+      setTaksit("");
+      setTutar("");
+      setTarih(new Date().toISOString().slice(0, 10));
+      handleRemoveImage();
+      
+    } catch (error) {
+      console.error('❌ Form submit hatası:', error);
+      alert(`❌ Hata oluştu: ${error.response?.data?.message || error.message}`);
     }
-    
-    // Form'u temizle
-    setSelectedClcard("");
-    setEvrakNo("");
-    setTahsilatTuru("");
-    setBanka("");
-    setTaksit("");
-    setTutar("");
-    setTarih(new Date().toISOString().slice(0, 10));
-    handleRemoveImage();
   };
 
   return (
@@ -734,6 +825,7 @@ function TahsilatForm({ username }) {
           <Typography variant="h5" align="center" sx={{ mb: 3, color: "#1976d2" }}>
             Tahsilat Formu <span style={{ fontSize: 18, color: '#555', marginLeft: 12 }}>({username})</span>
           </Typography>
+
           <Box component="form" onSubmit={handleSubmit} sx={{ 
             display: "flex", 
             flexDirection: "column",
@@ -841,15 +933,26 @@ function TahsilatForm({ username }) {
                   📷 Kamera
                 </Button>
                 {selectedImage && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    onClick={handleRemoveImage}
-                    sx={{ minWidth: 120 }}
-                  >
-                    🗑️ Kaldır
-                  </Button>
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      size="small"
+                      onClick={handleOCRExtract}
+                      sx={{ minWidth: 120 }}
+                    >
+                      🔍 OCR Oku
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      onClick={handleRemoveImage}
+                      sx={{ minWidth: 120 }}
+                    >
+                      🗑️ Kaldır
+                    </Button>
+                  </>
                 )}
               </Box>
               

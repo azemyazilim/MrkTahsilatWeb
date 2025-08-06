@@ -8,6 +8,10 @@ yarn-error.log*
 /frontend/build
 /backend/dist
 
+# Uploads (user generated content)
+/backend/uploads/
+uploads/
+
 # Environment variables (keep .env.production for deployment)
 .env
 .env.local
