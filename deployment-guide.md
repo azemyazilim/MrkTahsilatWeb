@@ -13,7 +13,7 @@ Bu rehber, MrkTahsilatWeb projesini Ubuntu 20.04 sunucusunda yayınlamak için g
 ## 📋 Gereksinimler
 
 - **Sunucu:** Ubuntu 20.04 LTS
-- **Domain:** mrkotomotiv.com
+- **Domain:** mrktahsilat.com
 - **SSL:** Let's Encrypt (Certbot)
 - **Web Server:** Nginx
 - **Process Manager:** PM2
@@ -53,7 +53,7 @@ TTL: 300
 
 ```bash
 # SSL sertifikası alın
-sudo certbot --nginx -d mrkotomotiv.com -d www.mrkotomotiv.com
+sudo certbot --nginx -d mrktahsilat.com -d www.mrktahsilat.com
 ```
 
 ### 4. Proje Kurulumu
@@ -113,7 +113,7 @@ DB_PORT=2024
 DB_DATABASE=GO3
 DB_USER=sa
 DB_PASSWORD=8423Otomotiv
-CORS_ORIGIN=https://mrkotomotiv.com,https://www.mrkotomotiv.com
+CORS_ORIGIN=https://mrktahsilat.com,https://www.mrktahsilat.com
 ```
 
 ### PM2 Ecosystem
@@ -276,15 +276,19 @@ Sorun yaşadığınızda:
 
 Kurulum tamamlandıktan sonra:
 
-- **Frontend:** https://mrkotomotiv.com
-- **Backend API:** https://mrkotomotiv.com/api
-- **Health Check:** https://mrkotomotiv.com/health
+- **Frontend:** https://mrktahsilat.com
+- **Backend API:** https://mrktahsilat.com/api
+- **Health Check:** https://mrktahsilat.com/health
 
 Projeniz artık production ortamında çalışmaya hazır!
 
 ## 🌐 Erişim
 
-- **Frontend:** https://mrkotomotiv.com
-- **Backend API:** https://mrkotomotiv.com/api
-- **Health Check:** https://mrkotomotiv.com/health
+- **Frontend:** https://mrktahsilat.com
+- **Backend API:** https://mrktahsilat.com/api
+- **Health Check:** https://mrktahsilat.com/health
+
+# Test URL'leri
+curl https://mrktahsilat.com/api/health
+curl -I https://mrktahsilat.com
 

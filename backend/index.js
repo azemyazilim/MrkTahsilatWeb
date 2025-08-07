@@ -40,7 +40,7 @@ const PORT = process.env.PORT || 5000;
 // CORS Configuration for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://mrkotomotiv.com', 'https://www.mrkotomotiv.com']
+    ? ['https://mrktahsilat.com', 'https://www.mrktahsilat.com']
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   optionsSuccessStatus: 200
@@ -140,7 +140,7 @@ app.get('/api/health', (req, res) => {
     company: 'Azem Yazılım',
     purpose: 'Tahsilat Yönetim Sistemi',
     security: 'SSL Enabled - Business Application',
-    contact: 'info@mrkotomotiv.com',
+    contact: 'info@mrktahsilat.com',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     database: {

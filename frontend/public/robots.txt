@@ -3,5 +3,5 @@
 User-agent: *
 Allow: /
 
-# Contact: info@mrkotomotiv.com
-# Sitemap: https://mrkotomotiv.com/sitemap.xml
+# Contact: info@mrktahsilat.com
+# Sitemap: https://mrktahsilat.com/sitemap.xml
