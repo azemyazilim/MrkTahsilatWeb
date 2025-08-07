@@ -5,11 +5,18 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.2.0",
+    "@mui/x-data-grid": "^8.9.2",
+    "@tanstack/react-table": "^8.21.3",
+    "ag-grid-community": "^34.1.1",
+    "ag-grid-react": "^34.1.1",
     "axios": "^1.11.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "react-virtualized-auto-sizer": "^1.0.26",
+    "react-window": "^1.8.11"
   },
   "scripts": {
     "start": "react-scripts start",

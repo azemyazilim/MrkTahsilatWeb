@@ -1,13 +1,29 @@
 // MrkTahsilatWeb Backend API
+
+// Error handling - Must be at the very top
+process.on('uncaughtException', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', error.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
+process.on('exit', (code) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🛑 Process exiting with code: ${code}`);
+  }
+});
+
 const express = require('express');
 const cors = require('cors');
 const mssql = require('mssql');
 const path = require('path');
 const multer = require('multer');
-const sharp = require('sharp');
 const crypto = require('crypto');
 const fs = require('fs').promises;
-const Tesseract = require('tesseract.js');
 
 // UUID generator using crypto
 const generateUUID = () => {
@@ -17,17 +33,6 @@ const generateUUID = () => {
 // Load environment variables based on NODE_ENV
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
 require('dotenv').config({ path: path.join(__dirname, envFile) });
-
-// Environment info (reduced for production)
-if (process.env.NODE_ENV !== 'production') {
-  console.log('📊 Environment Debug:');
-  console.log('   .env path:', path.join(__dirname, envFile));
-  console.log('   DB_SERVER:', process.env.DB_SERVER);
-  console.log('   DB_PORT:', process.env.DB_PORT);
-  console.log('   DB_DATABASE:', process.env.DB_DATABASE);
-  console.log('   DB_USER:', process.env.DB_USER);
-  console.log('');
-}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,11 +49,28 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Logging middleware
+// Security Headers for Norton/Antivirus compatibility
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Referrer policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
   next();
 });
+
+// Logging middleware (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // Database configuration
 const dbConfig = {
@@ -80,7 +102,6 @@ const ensureDirectories = async () => {
   try {
     await fs.mkdir(uploadsDir, { recursive: true });
     await fs.mkdir(imagesDir, { recursive: true });
-    console.log('📁 Upload directories ensured');
   } catch (error) {
     console.error('❌ Error creating directories:', error);
   }
@@ -116,11 +137,17 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'MrkTahsilatWeb Backend API',
+    company: 'Azem Yazılım',
+    purpose: 'Tahsilat Yönetim Sistemi',
+    security: 'SSL Enabled - Business Application',
+    contact: 'info@mrktahsilat.com',
+    version: '1.0.0',
     timestamp: new Date().toISOString(),
     database: {
       server: dbConfig.server,
       port: dbConfig.port,
-      database: dbConfig.database
+      database: dbConfig.database,
+      status: 'Connected'
     }
   });
 });
@@ -128,8 +155,6 @@ app.get('/api/health', (req, res) => {
 // Login endpoint
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  
-  console.log(`🔐 Login attempt: ${username}`);
   
   if (!username || !password) {
     return res.status(400).json({ 
@@ -139,20 +164,15 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    console.log('📡 Connecting to database...');
     const pool = await mssql.connect(dbConfig);
-    console.log('✅ Database connected successfully');
     
     const result = await pool.request()
       .input('username', mssql.VarChar, username)
       .input('password', mssql.VarChar, password)
       .query('SELECT * FROM KULLANICITB WHERE KullaniciAdi COLLATE SQL_Latin1_General_CP1_CI_AS = @username COLLATE SQL_Latin1_General_CP1_CI_AS AND Sifre = @password');
     
-    console.log(`📊 Query executed, found records: ${result.recordset.length}`);
-    
     if (result.recordset.length > 0) {
       const user = result.recordset[0];
-      console.log(`✅ Login successful: ${username}`);
       res.json({ 
         success: true, 
         user: { 
@@ -162,7 +182,6 @@ app.post('/api/login', async (req, res) => {
         }
       });
     } else {
-      console.log(`❌ Login failed: ${username}`);
       res.status(401).json({ 
         success: false, 
         message: 'Kullanıcı adı veya şifre yanlış' 
@@ -179,7 +198,6 @@ app.post('/api/login', async (req, res) => {
 
 // Image upload endpoint - requires TahsilatID
 app.post('/api/upload-image', upload.single('image'), async (req, res) => {
-  console.log('📸 Image upload request received');
   
   try {
     if (!req.file) {
@@ -211,39 +229,13 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
     const filePath = path.join(imagesDir, uniqueFileName);
     const relativePath = `uploads/images/${uniqueFileName}`;
 
-    console.log(`📁 Processing image: ${originalName} -> ${uniqueFileName}`);
+    // Save original image directly to disk without processing
+    const fileBuffer = file.buffer;
+    const fileSize = fileBuffer.length;
+    const mimeType = file.mimetype;
 
-    // Process image with Sharp (resize, optimize)
-    let processedBuffer;
-    let imageInfo;
-    
-    try {
-      const image = sharp(file.buffer);
-      imageInfo = await image.metadata();
-      
-      // Resize if too large, maintain aspect ratio, optimize quality
-      processedBuffer = await image
-        .resize({
-          width: imageInfo.width > 1920 ? 1920 : undefined,
-          height: imageInfo.height > 1080 ? 1080 : undefined,
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .jpeg({ quality: 85, progressive: true })
-        .toBuffer();
-
-      console.log(`🔧 Image processed: ${imageInfo.width}x${imageInfo.height} -> optimized`);
-    } catch (sharpError) {
-      console.error('❌ Image processing error:', sharpError);
-      return res.status(400).json({
-        success: false,
-        message: 'Resim işlenirken hata oluştu'
-      });
-    }
-
-    // Save processed image to disk
-    await fs.writeFile(filePath, processedBuffer);
-    console.log(`💾 Image saved: ${filePath}`);
+    // Save image to disk
+    await fs.writeFile(filePath, fileBuffer);
 
     // Save to database
     const pool = await mssql.connect(dbConfig);
@@ -252,10 +244,10 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
       .input('FileName', mssql.NVarChar, uniqueFileName)
       .input('OriginalFileName', mssql.NVarChar, originalName)
       .input('FilePath', mssql.NVarChar, relativePath)
-      .input('FileSize', mssql.BigInt, processedBuffer.length)
-      .input('MimeType', mssql.NVarChar, 'image/jpeg') // Always JPEG after processing
-      .input('Width', mssql.Int, imageInfo.width)
-      .input('Height', mssql.Int, imageInfo.height)
+      .input('FileSize', mssql.BigInt, fileSize)
+      .input('MimeType', mssql.NVarChar, mimeType)
+      .input('Width', mssql.Int, null) // No image processing
+      .input('Height', mssql.Int, null) // No image processing
       .input('UploadedBy', mssql.NVarChar, username)
       .query(`
         INSERT INTO TahsilatResimleri 
@@ -267,7 +259,6 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
       `);
 
     const imageID = result.recordset[0].ImageID;
-    console.log(`✅ Image saved to database with ID: ${imageID}`);
 
     res.json({
       success: true,
@@ -277,11 +268,7 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
         fileName: uniqueFileName,
         originalName: originalName,
         filePath: relativePath,
-        fileSize: processedBuffer.length,
-        dimensions: {
-          width: imageInfo.width,
-          height: imageInfo.height
-        },
+        fileSize: fileSize,
         url: `/uploads/images/${uniqueFileName}`
       }
     });
@@ -344,7 +331,7 @@ app.get('/api/clcard', async (req, res) => {
   try {
     const pool = await mssql.connect(dbConfig);
     
-    let query = 'SELECT TOP 100 CODE, DEFINITION_, SPECODE FROM LG_002_CLCARD';
+    let query = 'SELECT TOP 100 LOGICALREF, CODE, DEFINITION_, SPECODE FROM LG_002_CLCARD';
     let result;
     
     if (username) {
@@ -395,7 +382,8 @@ app.get('/api/gunluk-tahsilat', async (req, res) => {
           Durum,
           Bölge,
           Plasiyer,
-          EvrakNo
+          EvrakNo,
+          Taksit
         FROM GunlukTahsilat_V 
         WHERE Plasiyer IN ('EYÜP', 'ALİ', 'YİĞİT', 'AZİZ', 'GÖRKEM', 'ATAKAN', 'SÜLEYMAN', 'HASAN')
         ORDER BY EklemeTarihi DESC
@@ -484,236 +472,6 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// OCR endpoint - Extract document number from image
-app.post('/api/ocr-extract', upload.single('image'), async (req, res) => {
-  console.log('👁️ OCR extraction request received');
-  
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Resim dosyası seçilmedi'
-      });
-    }
-
-    const file = req.file;
-    console.log('📸 Processing image for OCR:', file.originalname);
-    console.log('📊 File info:', {
-      size: file.size,
-      mimetype: file.mimetype,
-      hasBuffer: !!file.buffer
-    });
-
-    // Buffer'dan resmi oku ve OCR için optimize et - daha agresif preprocessing
-    const processedBuffer = await sharp(file.buffer)
-      .resize({ width: 2000, fit: 'inside', withoutEnlargement: false }) // Resmi büyüt
-      .greyscale() // Siyah-beyaz yaparak OCR performansını artır
-      .normalize() // Kontrast iyileştirme
-      .linear(1.5, -20) // Kontrast ve parlaklık ayarı
-      .sharpen({ sigma: 2, m1: 0.8, m2: 0.6 }) // Daha güçlü keskinlik
-      .threshold(120) // Binary threshold - siyah/beyaz yapma
-      .png() // PNG format OCR için daha iyi
-      .toBuffer();
-
-    console.log('✅ Image processed for OCR, size:', processedBuffer.length);
-
-    // Tesseract ile OCR işlemi
-    console.log('🔍 Running OCR analysis...');
-    
-    try {
-      // İlk OCR denemesi - tam text
-      const { data: { text } } = await Tesseract.recognize(processedBuffer, 'eng', {
-        logger: m => {
-          if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-          }
-        },
-        options: {
-          tessedit_pageseg_mode: Tesseract.PSM.AUTO,
-          tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÇĞIİÖŞÜçğıiöşü.,:-/TL₺KrNoN ',
-          tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
-          preserve_interword_spaces: '1'
-        }
-      });
-
-      console.log('📄 OCR Raw Text:', text);
-      let extractedData = extractDocumentInfo(text);
-
-      // Eğer evrak no bulunamadıysa farklı PSM modları dene
-      if (!extractedData.evrakNo) {
-        console.log('🔄 Trying different PSM modes...');
-        
-        // PSM.SINGLE_BLOCK modunu dene
-        const { data: { text: text2 } } = await Tesseract.recognize(processedBuffer, 'eng', {
-          options: {
-            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-            tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÇĞIİÖŞÜçğıiöşü.,:-/TL₺KrNoN ',
-            tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY
-          }
-        });
-        
-        console.log('📄 PSM.SINGLE_BLOCK Text:', text2);
-        let extractedData2 = extractDocumentInfo(text2);
-        
-        if (extractedData2.evrakNo) {
-          extractedData = extractedData2;
-        } else {
-          // PSM.SINGLE_COLUMN modunu dene
-          const { data: { text: text3 } } = await Tesseract.recognize(processedBuffer, 'eng', {
-            options: {
-              tessedit_pageseg_mode: Tesseract.PSM.SINGLE_COLUMN,
-              tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÇĞIİÖŞÜçğıiöşü.,:-/TL₺KrNoN ',
-              tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY
-            }
-          });
-          
-          console.log('📄 PSM.SINGLE_COLUMN Text:', text3);
-          let extractedData3 = extractDocumentInfo(text3);
-          
-          if (extractedData3.evrakNo) {
-            extractedData = extractedData3;
-          }
-        }
-      }
-
-      res.json({
-        success: true,
-        message: 'OCR işlemi tamamlandı',
-        data: {
-          rawText: text,
-          extractedData: extractedData,
-          confidence: extractedData.confidence || 0
-        }
-      });
-
-    } catch (ocrError) {
-      console.error('❌ Tesseract OCR error:', ocrError);
-      
-      // Fallback: Sadece sayısal OCR dene
-      try {
-        console.log('🔄 Trying numeric-only OCR...');
-        const { data: { text: numericText } } = await Tesseract.recognize(processedBuffer, 'eng', {
-          options: {
-            tessedit_char_whitelist: '0123456789.,:-/',
-            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK
-          }
-        });
-        
-        console.log('📄 Numeric OCR Text:', numericText);
-        const extractedData = extractDocumentInfo(numericText);
-        
-        res.json({
-          success: true,
-          message: 'OCR işlemi tamamlandı (sadece sayılar)',
-          data: {
-            rawText: numericText,
-            extractedData: extractedData,
-            confidence: Math.max(0, (extractedData.confidence || 0) - 20)
-          }
-        });
-        
-      } catch (fallbackError) {
-        throw new Error(`OCR failed: ${ocrError.message} | Fallback failed: ${fallbackError.message}`);
-      }
-    }
-
-  } catch (error) {
-    console.error('❌ OCR error:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'OCR işlemi sırasında hata oluştu: ' + error.message
-    });
-  }
-});
-
-// OCR text analysis function
-function extractDocumentInfo(text) {
-  const result = {
-    evrakNo: null,
-    tutar: null,
-    tarih: null,
-    odemeSecenegi: null,
-    confidence: 0
-  };
-
-  try {
-    console.log('🔍 Analyzing text for patterns...');
-    
-    // Evrak numarası çıkarma - çok daha geniş pattern'ler
-    const noPatterns = [
-      /(?:No|NO|no|№|N°|Evrak|EVRAK|Fiş|FİŞ|Belge|BELGE)\s*:?\s*(\d{4,8})/gi,
-      /(\d{5,8})\s*(?:No|NO|no)/gi,
-      /(?:^|\s)(\d{5,8})(?:\s|$)/gm, // Tek başına 5-8 haneli sayılar
-      /(?:Seri|SERİ|Serie)\s*:?\s*[A-Z]*\s*(?:No|NO|no)\s*:?\s*(\d{4,8})/gi
-    ];
-    
-    for (const pattern of noPatterns) {
-      const matches = [...text.matchAll(pattern)];
-      for (const match of matches) {
-        const evrakNo = match[1];
-        if (evrakNo && evrakNo.length >= 4) {
-          result.evrakNo = evrakNo;
-          result.confidence += 30;
-          console.log('✅ Evrak No bulundu (pattern):', result.evrakNo);
-          break;
-        }
-      }
-      if (result.evrakNo) break;
-    }
-
-    // Tutar çıkarma - TL, ₺ veya sayı,sayı formatları
-    const tutarPatterns = [
-      /(\d+[.,]\d+)\s*(?:TL|₺|Kr)/gi,
-      /(?:Toplam|TOPLAM|Total|TOTAL|Tutar|TUTAR|Miktar|MİKTAR)\s*:?\s*(\d+[.,]\d+)/gi,
-      /(\d+[.,]\d{2})\s*(?:TL|₺)/gi
-    ];
-    
-    for (const pattern of tutarPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        result.tutar = match[1].replace(',', '.');
-        result.confidence += 25;
-        console.log('✅ Tutar bulundu:', result.tutar);
-        break;
-      }
-    }
-
-    // Tarih çıkarma - çeşitli formatlar
-    const tarihPattern = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/;
-    const tarihMatch = text.match(tarihPattern);
-    if (tarihMatch) {
-      const [, gun, ay, yil] = tarihMatch;
-      const fullYear = yil.length === 2 ? '20' + yil : yil;
-      result.tarih = `${gun.padStart(2, '0')}.${ay.padStart(2, '0')}.${fullYear}`;
-      result.confidence += 20;
-      console.log('✅ Tarih bulundu:', result.tarih);
-    }
-
-    // Ödeme türü çıkarma
-    if (text.includes('NAKİT') || text.includes('NAKIT')) {
-      result.odemeSecenegi = 'Nakit';
-      result.confidence += 15;
-    } else if (text.includes('KART') || text.includes('KREDİ')) {
-      result.odemeSecenegi = 'Kredi Kartı';
-      result.confidence += 15;
-    } else if (text.includes('ÇEK')) {
-      result.odemeSecenegi = 'Çek';
-      result.confidence += 15;
-    } else if (text.includes('HAVALE')) {
-      result.odemeSecenegi = 'Banka Havalesi';
-      result.confidence += 15;
-    }
-
-    console.log('📊 OCR Analysis Result:', result);
-    return result;
-
-  } catch (error) {
-    console.error('❌ Text analysis error:', error);
-    return result;
-  }
-}
-
 // Test endpoint - Tüm API'leri test et
 app.get('/api/test', async (req, res) => {
   try {
@@ -736,6 +494,14 @@ app.get('/api/test', async (req, res) => {
     const sampleCustomer = await pool.request().query('SELECT TOP 1 CODE, DEFINITION_ FROM LG_002_CLCARD');
     const sampleTahsilat = await pool.request().query('SELECT TOP 1 ID, CariUnvan, Tutar FROM GunlukTahsilat_V');
     
+    // Test 6: GunlukTahsilat_V kolonlarını kontrol et
+    const columns = await pool.request().query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'GunlukTahsilat_V'
+      ORDER BY ORDINAL_POSITION
+    `);
+    
     res.json({
       success: true,
       message: 'Tüm testler başarılı',
@@ -751,6 +517,9 @@ app.get('/api/test', async (req, res) => {
           user: sampleUser.recordset[0] || null,
           customer: sampleCustomer.recordset[0] || null,
           tahsilat: sampleTahsilat.recordset[0] || null
+        },
+        columns: {
+          GunlukTahsilat_V: columns.recordset.map(col => col.COLUMN_NAME)
         }
       }
     });
@@ -764,27 +533,58 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log('🚀 MrkTahsilatWeb Backend API');
-  console.log('================================================================');
-  console.log(`📦 Server: http://localhost:${PORT}`);
-  console.log(`🔍 Health: http://localhost:${PORT}/api/health`);
-  console.log('');
-  console.log('📡 Database Config:');
-  console.log(`   Server: ${dbConfig.server}:${dbConfig.port}`);
-  console.log(`   Database: ${dbConfig.database}`);
-  console.log(`   User: ${dbConfig.user}`);
-  console.log('');
-  console.log('📋 API Endpoints:');
-  console.log('   POST /api/login         - User authentication (KULLANICITB)');
-  console.log('   POST /api/upload-image  - Upload image with processing');
-  console.log('   GET  /api/images/:user  - Get user images');
-  console.log('   GET  /api/health        - Server status');
-  console.log('   GET  /api/clcard        - Customer list (LG_002_CLCARD)');
-  console.log('   GET  /api/gunluk-tahsilat - Daily collections (GunlukTahsilat_V)');
-  console.log('   GET  /api/stats         - Statistics');
-  console.log('   GET  /api/test          - Test all endpoints');
-  console.log('   GET  /uploads/*         - Static file serving');
-  console.log('================================================================');
+// Start server with error handling
+const server = app.listen(PORT, (err) => {
+  if (err) {
+    console.error('❌ Server start error:', err);
+    process.exit(1);
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🚀 MrkTahsilatWeb Backend API');
+    console.log('================================================================');
+    console.log(`📦 Server: http://localhost:${PORT}`);
+    console.log(`🔍 Health: http://localhost:${PORT}/api/health`);
+    console.log('');
+    console.log('📡 Database Config:');
+    console.log(`   Server: ${dbConfig.server}:${dbConfig.port}`);
+    console.log(`   Database: ${dbConfig.database}`);
+    console.log(`   User: ${dbConfig.user}`);
+    console.log('');
+    console.log('📋 API Endpoints:');
+    console.log('   POST /api/login         - User authentication (KULLANICITB)');
+    console.log('   POST /api/upload-image  - Upload image with processing');
+    console.log('   GET  /api/images/:user  - Get user images');
+    console.log('   GET  /api/health        - Server status');
+    console.log('   GET  /api/clcard        - Customer list (LG_002_CLCARD)');
+    console.log('   GET  /api/gunluk-tahsilat - Daily collections (GunlukTahsilat_V)');
+    console.log('   GET  /api/stats         - Statistics');
+    console.log('   GET  /api/test          - Test all endpoints');
+    console.log('   GET  /uploads/*         - Static file serving');
+    console.log('================================================================');
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🛑 SIGTERM received, shutting down gracefully');
+  }
+  server.close(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Server closed');
+    }
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🛑 SIGINT received, shutting down gracefully');
+  }
+  server.close(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Server closed');
+    }
+    process.exit(0);
+  });
 });

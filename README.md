@@ -1,6 +1,6 @@
-# MrkTahsilatWeb - Local Development
+# MrkTahsilatWeb - Tahsilat Yönetim Sistemi
 
-Bu proje artık sadece local geliştirme için optimize edilmiştir ve gerçek veritabanına bağlanmaktadır.
+Bu proje, işletmeler için geliştirilmiş profesyonel tahsilat yönetim sistemidir.
 
 ## 🗂️ Proje Yapısı
 
@@ -9,12 +9,20 @@ MrkTahsilatWeb/
 ├── backend/                 # Node.js/Express API Server
 │   ├── index.js            # Ana backend dosyası
 │   ├── package.json        # Dependencies
-│   └── .env                # Veritabanı ayarları
+│   ├── env.production      # Production environment
+│   └── uploads/            # Yüklenen dosyalar
 ├── frontend/               # React.js Frontend
 │   ├── src/                # React source files
 │   ├── public/            # Static files
 │   └── package.json       # Dependencies
-└── README.md              # Bu dosya
+├── database/              # Veritabanı dosyaları
+│   └── create_images_table.sql
+├── deployment-guide.md    # Deployment rehberi
+├── setup-server.sh        # Sunucu kurulum scripti
+├── quick-deploy.sh        # Hızlı deployment scripti
+├── nginx.conf            # Nginx konfigürasyonu
+├── ecosystem.config.js   # PM2 konfigürasyonu
+└── README.md             # Bu dosya
 ```
 
 ## 🔧 Veritabanı Bağlantısı
@@ -59,6 +67,8 @@ Backend şu endpoints'leri sağlar:
 - `GET /api/gunluk-tahsilat` - Günlük tahsilat (GunlukTahsilat_V)
 - `GET /api/stats` - İstatistikler
 - `GET /api/test` - Tüm tabloları test et
+- `POST /api/upload-image` - Resim yükleme
+- `GET /api/images/:user` - Kullanıcı resimleri
 
 ## 🌐 Erişim
 
@@ -78,13 +88,21 @@ Invoke-WebRequest -Uri "http://localhost:5000/api/test" -Method GET
 http://localhost:5000/api/test
 ```
 
-## 📋 Temizlenmiş Dosyalar
+## 🚀 Production Deployment
 
-Aşağıdaki deployment ve server dosyaları kaldırıldı:
-- Tüm .sh deployment scriptleri
-- Production environment dosyaları  
-- Server konfigürasyon dosyaları
-- Duplicate klasörler
-- Gereksiz batch dosyaları
+Production ortamında yayınlamak için:
 
-Proje artık sadece local geliştirme için optimize edilmiştir.
+1. `deployment-guide.md` dosyasını inceleyin
+2. `setup-server.sh` scriptini çalıştırın
+3. `quick-deploy.sh` ile hızlı deployment yapın
+
+## 📋 Temizlenmiş Özellikler
+
+- ✅ Gereksiz console.log'lar temizlendi
+- ✅ Boş dosyalar silindi
+- ✅ Eski deployment scriptleri kaldırıldı
+- ✅ Gereksiz batch dosyaları silindi
+- ✅ .gitignore optimize edildi
+- ✅ Kod kalitesi artırıldı
+
+Proje artık production ortamında çalışmaya hazır!

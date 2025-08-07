@@ -122,8 +122,6 @@ function TahsilatForm({ username }) {
     }
 
     try {
-      console.log('🔍 OCR işlemi başlatılıyor...');
-      
       const formData = new FormData();
       formData.append('image', selectedImage);
       
@@ -135,7 +133,6 @@ function TahsilatForm({ username }) {
 
       if (response.data.success) {
         const extracted = response.data.data.extractedData;
-        console.log('✅ OCR sonucu:', extracted);
 
         // Form alanlarını otomatik doldur
         if (extracted.evrakNo) {
@@ -160,7 +157,6 @@ function TahsilatForm({ username }) {
       }
 
     } catch (error) {
-      console.error('❌ OCR hatası:', error);
       alert(`❌ OCR işlemi başarısız: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -298,10 +294,6 @@ function TahsilatForm({ username }) {
   const calculateDailyTotal = () => {
     const today = new Date();
     
-    console.log('=== SENİN TAHSİLATİN - GÜNLÜK HESAPLAMA ===');
-    console.log('Kullanıcı:', username);
-    console.log('Günlük hesaplama (kullanıcının plasiyeri) - bugün:', today.toLocaleDateString('tr-TR'));
-    
     let total = 0;
     let matchedRecords = [];
     
@@ -323,19 +315,8 @@ function TahsilatForm({ username }) {
           cariKod: row.CariKod,
           plasiyer: row.Plasiyer
         });
-        
-        console.log(`SENİN TAHSİLATİN Günlük - Kayıt ${index}:`, {
-          tarih: row.Tarih,
-          cariKod: row.CariKod,
-          tutar: tutar,
-          plasiyer: row.Plasiyer,
-          gunlukToplam: total
-        });
       }
     });
-    
-    console.log('SENİN TAHSİLATİN - Günlük eşleşen kayıtlar:', matchedRecords.length);
-    console.log('SENİN TAHSİLATİN - Günlük toplam (PLASIYER BAZINDA):', total);
     
     return total;
   };
@@ -344,14 +325,6 @@ function TahsilatForm({ username }) {
   const calculateWeeklyTotal = () => {
     const today = new Date();
     const { startOfWeek, endOfWeek } = getWeekRange(today);
-    
-    console.log('=== SENİN TAHSİLATİN - HAFTALIK HESAPLAMA ===');
-    console.log('Haftalık hesaplama (kullanıcının plasiyeri):', {
-      today: today.toLocaleDateString('tr-TR'),
-      startOfWeek: startOfWeek.toLocaleDateString('tr-TR'),
-      endOfWeek: endOfWeek.toLocaleDateString('tr-TR'),
-      kullanici: username
-    });
     
     let weeklyTotal = 0;
     let matchedRecords = [];
@@ -377,9 +350,6 @@ function TahsilatForm({ username }) {
       }
     });
     
-    console.log('SENİN TAHSİLATİN - Haftalık eşleşen kayıtlar:', matchedRecords.length);
-    console.log('SENİN TAHSİLATİN - Haftalık toplam (PLASIYER BAZINDA):', weeklyTotal);
-    
     return weeklyTotal;
   };
 
@@ -389,11 +359,6 @@ function TahsilatForm({ username }) {
     const today = new Date();
     const { startOfWeek, endOfWeek } = getWeekRange(today);
     const userCariCodes = getUserCariCodes(); // Kullanıcının cari kodları
-    
-    console.log('=== PLASİYER HESAPLAMA BAŞLIYOR ===');
-    console.log('Kullanıcı:', username);
-    console.log('Kullanıcının cari kodları:', userCariCodes);
-    console.log('Toplam tahsilat kaydı:', gunlukTahsilat.length);
     
     gunlukTahsilat.forEach((row, index) => {
       const plasiyer = row.Plasiyer || 'Bilinmeyen';
@@ -423,17 +388,6 @@ function TahsilatForm({ username }) {
         // Günlük hesaplama - TÜM VERİLER (kullanıcı filtresi YOK)
         if (isSameDate(rowDate, today)) {
           plasiyerTotals[plasiyer].gunluk += tutar;
-          
-          // EYÜP için debug log
-          if (plasiyer === 'EYÜP') {
-            console.log(`EYÜP Günlük - Kayıt ${index}:`, {
-              tarih: row.Tarih,
-              cariKod: row.CariKod,
-              tutar: tutar,
-              kullanicininMi: userCariCodes.includes(row.CariKod),
-              gunlukToplam: plasiyerTotals[plasiyer].gunluk
-            });
-          }
         }
         
         // Haftalık hesaplama - TÜM VERİLER (kullanıcı filtresi YOK)
@@ -448,24 +402,12 @@ function TahsilatForm({ username }) {
       }
     });
     
-    // EYÜP için özet log
-    if (plasiyerTotals['EYÜP']) {
-      console.log('=== EYÜP PLASİYER ÖZETİ ===');
-      console.log('Toplam kayıt sayısı:', plasiyerTotals['EYÜP'].toplam_kayit);
-      console.log('Kullanıcının cari kodlarına ait kayıt:', plasiyerTotals['EYÜP'].kullanici_kayit);
-      console.log('Günlük toplam (TÜM VERİLER):', plasiyerTotals['EYÜP'].gunluk);
-      console.log('Haftalık toplam (TÜM VERİLER):', plasiyerTotals['EYÜP'].haftalik);
-      console.log('Aylık toplam (TÜM VERİLER):', plasiyerTotals['EYÜP'].aylik);
-    }
-    
     return plasiyerTotals;
   };
 
   // Plasiyer tablosu için genel toplamlar (tüm plasiyer verileri)
   const calculateGeneralDailyTotal = () => {
     const today = new Date();
-    
-    console.log('Genel günlük hesaplama - bugün:', today.toLocaleDateString('tr-TR'));
     
     let total = 0;
     let matchedRecords = [];
@@ -486,21 +428,12 @@ function TahsilatForm({ username }) {
       }
     });
     
-    console.log('Genel günlük eşleşen kayıtlar:', matchedRecords);
-    console.log('Genel günlük toplam:', total);
-    
     return total;
   };
 
   const calculateGeneralWeeklyTotal = () => {
     const today = new Date();
     const { startOfWeek, endOfWeek } = getWeekRange(today);
-    
-    console.log('Genel haftalık hesaplama:', {
-      today: today.toLocaleDateString('tr-TR'),
-      startOfWeek: startOfWeek.toLocaleDateString('tr-TR'),
-      endOfWeek: endOfWeek.toLocaleDateString('tr-TR')
-    });
     
     let total = 0;
     let matchedRecords = [];
@@ -521,20 +454,11 @@ function TahsilatForm({ username }) {
       }
     });
     
-    console.log('Genel haftalık eşleşen kayıtlar:', matchedRecords);
-    console.log('Genel haftalık toplam:', total);
-    
     return total;
   };
 
   const calculateGeneralMonthlyTotal = () => {
     const today = new Date();
-    
-    console.log('Genel aylık hesaplama:', {
-      today: today.toLocaleDateString('tr-TR'),
-      month: today.getMonth() + 1,
-      year: today.getFullYear()
-    });
     
     let total = 0;
     let matchedRecords = [];
@@ -555,23 +479,12 @@ function TahsilatForm({ username }) {
       }
     });
     
-    console.log('Genel aylık eşleşen kayıtlar:', matchedRecords);
-    console.log('Genel aylık toplam:', total);
-    
     return total;
   };
 
   // Aylık toplam hesaplama (bu ay) - Sadece kullanıcının plasiyer adına göre
   const calculateMonthlyTotal = () => {
     const today = new Date();
-    
-    console.log('=== SENİN TAHSİLATİN - AYLIK HESAPLAMA ===');
-    console.log('Aylık hesaplama (kullanıcının plasiyeri):', {
-      today: today.toLocaleDateString('tr-TR'),
-      month: today.getMonth() + 1, // 1-based month for display
-      year: today.getFullYear(),
-      kullanici: username
-    });
     
     let monthlyTotal = 0;
     let matchedRecords = [];
@@ -597,9 +510,6 @@ function TahsilatForm({ username }) {
       }
     });
     
-    console.log('SENİN TAHSİLATİN - Aylık eşleşen kayıtlar:', matchedRecords.length);
-    console.log('SENİN TAHSİLATİN - Aylık toplam (PLASIYER BAZINDA):', monthlyTotal);
-    
     return monthlyTotal;
   };
 
@@ -608,13 +518,6 @@ function TahsilatForm({ username }) {
     const today = new Date();
     const currentMonth = today.getMonth(); // 0-based (Ağustos = 7)
     const currentYear = today.getFullYear(); // 2025
-    
-    console.log('Filtreleme Başlangıç:', {
-      currentMonth: currentMonth,
-      currentYear: currentYear,
-      monthName: today.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }),
-      totalRecords: data.length
-    });
     
     const filteredData = data.filter(row => {
       if (row.Tarih) {
@@ -643,31 +546,9 @@ function TahsilatForm({ username }) {
         const isCurrentMonth = isValidDate && rowDate.getMonth() === currentMonth;
         const isCurrentYear = isValidDate && rowDate.getFullYear() === currentYear;
         
-        // Debug için ilk 5 kayıt bilgisini logla
-        if (data.indexOf(row) < 5) {
-          console.log(`Kayıt ${data.indexOf(row) + 1}:`, {
-            originalDate: row.Tarih,
-            parsedDate: isValidDate ? rowDate.toLocaleDateString('tr-TR') : 'Geçersiz',
-            rowMonth: isValidDate ? rowDate.getMonth() : 'N/A',
-            rowYear: isValidDate ? rowDate.getFullYear() : 'N/A',
-            currentMonth: currentMonth,
-            currentYear: currentYear,
-            isCurrentMonth,
-            isCurrentYear,
-            willInclude: isValidDate && isCurrentMonth && isCurrentYear
-          });
-        }
-        
         return isValidDate && isCurrentMonth && isCurrentYear;
       }
       return false;
-    });
-    
-    console.log('Filtreleme Sonuç:', {
-      originalCount: data.length,
-      filteredCount: filteredData.length,
-      sampleDates: data.slice(0, 5).map(r => r.Tarih),
-      filteredSampleDates: filteredData.slice(0, 3).map(r => r.Tarih)
     });
     
     return filteredData;
@@ -675,24 +556,20 @@ function TahsilatForm({ username }) {
 
   // Verileri yenileme fonksiyonu
   const refreshData = () => {
-    console.log('Veriler yenileniyor...');
     
     // Cari listesi API çağrısı - kullanıcıya özel (SPECODE = username)
     axios.get(`${API_BASE_URL}/clcard?username=${username}`).then(res => {
       // Backend {success: true, data: [...]} formatında döndürüyor
       const clcardsData = res.data.success ? res.data.data : [];
       setClcards(clcardsData);
-      console.log('Cari listesi yenilendi:', clcardsData.length, 'kayıt');
     }).catch(err => {
-      console.error('Cari listesi yenilenirken hata:', err);
-      setClcards([]); // Hata durumunda boş array
+      // Cari listesi yenilenirken hata oluştu
     });
     
     // Günlük tahsilat verilerini al - belirtilen plasiyer filtresi ile
     axios.get(`${API_BASE_URL}/gunluk-tahsilat`).then(res => {
       // Backend {success: true, data: [...]} formatında döndürüyor
       const tahsilatData = res.data.success ? res.data.data : [];
-      console.log('API\'den gelen yeni ham veri (ilk 3 kayıt):', tahsilatData.slice(0, 3));
       
       // Sadece mevcut ayın verilerini filtrele
       const currentMonthData = filterCurrentMonthData(tahsilatData);
@@ -707,9 +584,8 @@ function TahsilatForm({ username }) {
       setGunlukTahsilat(sortedData);
       // Artık filtreleme yok, sadece ana veriyi kullanıyoruz
       
-      console.log('Tahsilat verileri yenilendi ve ID DESC sıralandı:', sortedData.length, 'kayıt');
     }).catch(err => {
-      console.error('Günlük tahsilat verileri yenilenirken hata:', err);
+      // Günlük tahsilat verileri yenilenirken hata oluştu
       setGunlukTahsilat([]); // Hata durumunda boş array
     });
   };
@@ -717,7 +593,7 @@ function TahsilatForm({ username }) {
   // Kullanıcıya özel cari listesini backend'den çek ve tahsilat verilerini al
   React.useEffect(() => {
     refreshData(); // İlk yükleme için mevcut fonksiyonu kullan
-  }, [username]);
+  }, [username, refreshData]);
 
   // Form submit
   const handleSubmit = async (e) => {
@@ -737,11 +613,8 @@ function TahsilatForm({ username }) {
       imageSize: selectedImage ? selectedImage.size : null
     };
     
-    console.log('Form verileri:', formData);
-    
     try {
       // 1. Önce tahsilat kaydını oluştur (burada sizin mevcut tahsilat kaydetme kodunuz gelecek)
-      console.log('💾 Tahsilat kaydı oluşturuluyor...');
       
       // TODO: Gerçek tahsilat kaydetme API'nizi buraya ekleyin
       // const tahsilatResponse = await axios.post(`${API_BASE_URL}/save-tahsilat`, formData);
@@ -749,11 +622,9 @@ function TahsilatForm({ username }) {
       
       // Şimdilik mock tahsilatId - gerçek implementasyonda yukarıdaki satırları kullanın
       const tahsilatId = Date.now(); // Geçici mock ID
-      console.log('✅ Tahsilat kaydı oluşturuldu, ID:', tahsilatId);
       
       // 2. Eğer resim seçilmişse, TahsilatID ile birlikte yükle
       if (selectedImage) {
-        console.log('📸 Resim yükleniyor...', selectedImage.name);
         
         const imageFormData = new FormData();
         imageFormData.append('image', selectedImage);
@@ -767,7 +638,7 @@ function TahsilatForm({ username }) {
         });
         
         if (uploadResponse.data.success) {
-          console.log('✅ Resim başarıyla yüklendi:', uploadResponse.data.data);
+          // console.log('✅ Resim başarıyla yüklendi:', uploadResponse.data.data);
         } else {
           throw new Error(uploadResponse.data.message || 'Resim yükleme başarısız');
         }
@@ -791,7 +662,6 @@ function TahsilatForm({ username }) {
       handleRemoveImage();
       
     } catch (error) {
-      console.error('❌ Form submit hatası:', error);
       alert(`❌ Hata oluştu: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -833,7 +703,7 @@ function TahsilatForm({ username }) {
           }}>
             <Autocomplete
               options={clcards}
-              getOptionLabel={option => `${option.CODE} - ${option.DEFINITION_} (${option.SPECODE})`}
+              getOptionLabel={option => `${option.CODE} - ${option.DEFINITION_} (${option.SPECODE}) [REF:${option.LOGICALREF}]`}
               value={clcards.find(c => c.CODE === selectedClcard) || null}
               onChange={(e, newValue) => setSelectedClcard(newValue ? newValue.CODE : "")}
               renderInput={params => (
@@ -1214,12 +1084,30 @@ function TahsilatForm({ username }) {
                 <table className="auto-layout-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 4 }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                   <tr>
-                    {Object.keys(gunlukTahsilat[0]).map(col => {
+                    {(() => {
+                      // Kolon sıralamasını belirle - Taksit BANKAADI'dan sonra gelsin
+                      const allKeys = Object.keys(gunlukTahsilat[0]);
+                      const orderedKeys = [];
+                      
+                      // Önce BANKAADI'ya kadar olan sütunları ekle
+                      allKeys.forEach(key => {
+                        if (key !== 'Taksit') {
+                          orderedKeys.push(key);
+                          // BANKAADI'dan sonra Taksit'i ekle
+                          if (key === 'BANKAADI') {
+                            orderedKeys.push('Taksit');
+                          }
+                        }
+                      });
+                      
+                      return orderedKeys;
+                    })().map(col => {
                       // Başlangıç kolon genişliklerini belirle
                       let width = '120px';
                       if (col === 'CariUnvan') width = '250px';
                       else if (col === 'TahsilatTuru') width = '140px';
                       else if (col === 'BANKAADI') width = '140px';
+                      else if (col === 'Taksit') width = '100px';
                       else if (col === 'Tutar') width = '120px';
                       else if (col === 'EklemeTarihi') width = '150px';
                       else if (col === 'CariKod') width = '120px';
@@ -1345,28 +1233,46 @@ function TahsilatForm({ username }) {
                         e.target.closest('tr').style.backgroundColor = i % 2 === 0 ? '#fff' : '#f9f9f9';
                       }}
                       >
-                        {Object.entries(row).map(([key, val], j) => {
-                          return (
-                            <td key={j} style={{ 
-                              padding: '8px 6px', 
-                              borderBottom: '1px solid #eee', 
-                              fontSize: '12px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              textAlign: key === 'Tutar' ? 'right' : 'left',
-                              color: '#333'
-                            }}>
-                              <span title={
-                                key === 'Tutar' ? formatCurrency(val) : 
-                                key === 'Tarih' || key === 'EklemeTarihi' ? formatDate(val) : val
-                              }>
-                                {key === 'Tutar' ? formatCurrency(val) : 
-                                 key === 'Tarih' || key === 'EklemeTarihi' ? formatDate(val) : val}
-                              </span>
-                            </td>
-                          );
-                        })}
+                        {(() => {
+                          // Kolon sıralamasını belirle - Taksit BANKAADI'dan sonra gelsin
+                          const allKeys = Object.keys(row);
+                          const orderedKeys = [];
+                          
+                          // Önce BANKAADI'ya kadar olan sütunları ekle
+                          allKeys.forEach(key => {
+                            if (key !== 'Taksit') {
+                              orderedKeys.push(key);
+                              // BANKAADI'dan sonra Taksit'i ekle
+                              if (key === 'BANKAADI') {
+                                orderedKeys.push('Taksit');
+                              }
+                            }
+                          });
+                          
+                          return orderedKeys.map((key, j) => {
+                            const val = row[key];
+                            return (
+                              <td key={j} style={{ 
+                                padding: '8px 6px', 
+                                borderBottom: '1px solid #eee', 
+                                fontSize: '12px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                textAlign: key === 'Tutar' ? 'right' : 'left',
+                                color: '#333'
+                              }}>
+                                <span title={
+                                  key === 'Tutar' ? formatCurrency(val) : 
+                                  key === 'Tarih' || key === 'EklemeTarihi' ? formatDate(val) : val
+                                }>
+                                  {key === 'Tutar' ? formatCurrency(val) : 
+                                   key === 'Tarih' || key === 'EklemeTarihi' ? formatDate(val) : val}
+                                </span>
+                              </td>
+                            );
+                          });
+                        })()}
                       </tr>
                     ))
                   )}
@@ -1386,26 +1292,42 @@ function TahsilatForm({ username }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <tbody>
                     <tr style={{ backgroundColor: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
-                      {Object.keys(gunlukTahsilat[0]).map((col, index) => {
-                        return (
-                          <td key={index} style={{ 
-                            padding: '10px 8px', 
-                            fontSize: '13px',
-                            fontWeight: 'bold',
-                            textAlign: col === 'Tutar' ? 'right' : 'center',
-                            color: '#1976d2',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            borderBottom: '1px solid #1976d2',
-                            background: index === 0 ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)' : 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-                            color: index === 0 ? '#fff' : '#1976d2'
-                          }}>
-                            {col === 'Tutar' ? formatCurrency(calculateTotal()) : 
-                             index === 0 ? '📊 TOPLAM' : ''}
-                          </td>
-                        );
-                      })}
+                      {(() => {
+                        // Kolon sıralamasını belirle - Taksit BANKAADI'dan sonra gelsin
+                        const allKeys = Object.keys(gunlukTahsilat[0]);
+                        const orderedKeys = [];
+                        
+                        // Önce BANKAADI'ya kadar olan sütunları ekle
+                        allKeys.forEach(key => {
+                          if (key !== 'Taksit') {
+                            orderedKeys.push(key);
+                            // BANKAADI'dan sonra Taksit'i ekle
+                            if (key === 'BANKAADI') {
+                              orderedKeys.push('Taksit');
+                            }
+                          }
+                        });
+                        
+                        return orderedKeys.map((col, index) => {
+                          return (
+                            <td key={index} style={{ 
+                              padding: '10px 8px', 
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              textAlign: col === 'Tutar' ? 'right' : 'center',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              borderBottom: '1px solid #1976d2',
+                              background: index === 0 ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)' : 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                              color: index === 0 ? '#fff' : '#1976d2'
+                            }}>
+                              {col === 'Tutar' ? formatCurrency(calculateTotal()) : 
+                               index === 0 ? '📊 TOPLAM' : ''}
+                            </td>
+                          );
+                        });
+                      })()}
                     </tr>
                   </tbody>
                 </table>
