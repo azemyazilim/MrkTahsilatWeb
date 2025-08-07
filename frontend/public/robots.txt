@@ -1,9 +1,7 @@
+# MrkTahsilatWeb Robots.txt
+# Allow all crawlers
 User-agent: *
 Allow: /
 
-# Güvenilir site - Norton/Antivirus için
-# MrkTahsilatWeb - Tahsilat Yönetim Sistemi
-# Owner: Azem Yazılım
-# Contact: info@mrktahsilat.com
-
-Sitemap: https://mrktahsilat.com/sitemap.xml
+# Contact: info@mrkotomotiv.com
+# Sitemap: https://mrkotomotiv.com/sitemap.xml

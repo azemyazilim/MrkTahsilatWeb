@@ -101,13 +101,7 @@ find "$BACKUP_DIR" -name "backup_*.tar.gz" -type f | sort -r | tail -n +6 | xarg
 success "Eski backuplar temizlendi"
 
 # Final status
-log "📊 Deployment özeti:"
-echo "   - Backup: $BACKUP_DIR/$BACKUP_NAME"
-echo "   - PM2 Status: $(pm2 jlist | jq -r '.[] | select(.name=="mrktahsilatweb-backend") | .pm2_env.status' 2>/dev/null || echo 'Unknown')"
-echo "   - Nginx Status: $(systemctl is-active nginx)"
-echo "   - Frontend: https://mrktahsilat.com"
-echo "   - Backend API: https://mrktahsilat.com/api"
-echo "   - Health Check: https://mrktahsilat.com/health"
+log "📊 Deployment özeti:"; echo "   - Backup: $BACKUP_DIR/$BACKUP_NAME"; echo "   - PM2 Status: $(pm2 jlist | jq -r '.[] | select(.name=="mrktahsilatweb-backend") | .pm2_env.status' 2>/dev/null || echo 'Unknown')"; echo "   - Nginx Status: $(systemctl is-active nginx)"; echo "   - Frontend: https://mrkotomotiv.com"; echo "   - Backend API: https://mrkotomotiv.com/api"; echo "   - Health Check: https://mrkotomotiv.com/health"
 
 success "🎉 Quick deployment başarıyla tamamlandı!"
 

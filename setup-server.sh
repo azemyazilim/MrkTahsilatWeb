@@ -140,7 +140,7 @@ DB_PORT=2024
 DB_DATABASE=GO3
 DB_USER=sa
 DB_PASSWORD=8423Otomotiv
-CORS_ORIGIN=https://mrktahsilat.com,https://www.mrktahsilat.com
+CORS_ORIGIN=https://mrkotomotiv.com,https://www.mrkotomotiv.com
 EOF
 
 chown www-data:www-data /var/www/mrktahsilat/backend/.env.production
@@ -201,25 +201,7 @@ success "Monitoring script oluşturuldu"
 # Final instructions
 log "🎉 Server setup tamamlandı!"
 echo ""
-echo -e "${GREEN}📋 Sonraki Adımlar:${NC}"
-echo "1. Domain DNS ayarlarını yapın (A record -> sunucu IP'si)"
-echo "2. SSL sertifikası alın: sudo certbot --nginx -d mrktahsilat.com -d www.mrktahsilat.com"
-echo "3. Projeyi klonlayın: cd /var/www/mrktahsilat && git clone [REPO_URL] ."
-echo "4. Dependencies kurun: cd backend && npm install && cd ../frontend && npm install"
-echo "5. Frontend build edin: cd frontend && npm run build"
-echo "6. PM2 ile başlatın: pm2 start ecosystem.config.js"
-echo "7. PM2'yi kaydedin: pm2 save && pm2 startup"
-echo ""
-echo -e "${GREEN}🔗 Faydalı Komutlar:${NC}"
-echo "- Deployment: /var/www/mrktahsilat/deploy.sh"
-echo "- Monitoring: /var/www/mrktahsilat/monitor.sh"
-echo "- PM2 logs: pm2 logs mrktahsilatweb-backend"
-echo "- Nginx logs: tail -f /var/log/nginx/mrktahsilat.error.log"
-echo ""
-echo -e "${GREEN}🌐 Erişim:${NC}"
-echo "- Frontend: https://mrktahsilat.com"
-echo "- Backend API: https://mrktahsilat.com/api"
-echo "- Health Check: https://mrktahsilat.com/health"
+echo -e "${GREEN}📋 Sonraki Adımlar:${NC}"; echo "1. Domain DNS ayarlarını yapın (A record -> sunucu IP'si)"; echo "2. SSL sertifikası alın: sudo certbot --nginx -d mrkotomotiv.com -d www.mrkotomotiv.com"; echo "3. Projeyi klonlayın: cd /var/www/mrktahsilat && git clone [REPO_URL] ."; echo "4. Dependencies kurun: cd backend && npm install && cd ../frontend && npm install"; echo "5. Frontend build edin: cd frontend && npm run build"; echo "6. PM2 ile başlatın: pm2 start ecosystem.config.js"; echo "7. PM2'yi kaydedin: pm2 save && pm2 startup"; echo -e "${GREEN}🔗 Faydalı Komutlar:${NC}"; echo "- Deployment: /var/www/mrktahsilat/deploy.sh"; echo "- Monitoring: /var/www/mrktahsilat/monitor.sh"; echo "- PM2 logs: pm2 logs mrktahsilatweb-backend"; echo "- Nginx logs: tail -f /var/log/nginx/mrktahsilat.error.log"; echo -e "${GREEN}🌐 Erişim:${NC}"; echo "- Frontend: https://mrkotomotiv.com"; echo "- Backend API: https://mrkotomotiv.com/api"; echo "- Health Check: https://mrkotomotiv.com/health";
 echo ""
 success "Server setup başarıyla tamamlandı!"
 

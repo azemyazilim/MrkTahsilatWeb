@@ -12,10 +12,12 @@ Bu rehber, MrkTahsilatWeb projesini Ubuntu 20.04 sunucusunda yayınlamak için g
 
 ## 📋 Gereksinimler
 
-- Ubuntu 20.04 LTS sunucu
-- Root erişimi
-- Domain (mrktahsilat.com)
-- Git repository erişimi
+- **Sunucu:** Ubuntu 20.04 LTS
+- **Domain:** mrkotomotiv.com
+- **SSL:** Let's Encrypt (Certbot)
+- **Web Server:** Nginx
+- **Process Manager:** PM2
+- **Node.js:** 18.x veya üzeri
 
 ## 🚀 Kurulum Adımları
 
@@ -47,16 +49,11 @@ Value: [SUNUCU_IP_ADRESI]
 TTL: 300
 ```
 
-### 3. SSL Sertifikası
+### 3. SSL Sertifikası Kurulumu
 
 ```bash
-# Let's Encrypt SSL sertifikası alın
-sudo certbot --nginx -d mrktahsilat.com -d www.mrktahsilat.com
-
-# SSL yenileme cron job ekleyin
-sudo crontab -e
-# Aşağıdaki satırı ekleyin:
-0 12 * * * /usr/bin/certbot renew --quiet
+# SSL sertifikası alın
+sudo certbot --nginx -d mrkotomotiv.com -d www.mrkotomotiv.com
 ```
 
 ### 4. Proje Kurulumu
@@ -108,6 +105,7 @@ sudo systemctl reload nginx
 
 `/var/www/mrktahsilat/backend/.env.production`:
 ```env
+# Production Environment Variables
 NODE_ENV=production
 PORT=5000
 DB_SERVER=88.247.8.178
@@ -115,7 +113,7 @@ DB_PORT=2024
 DB_DATABASE=GO3
 DB_USER=sa
 DB_PASSWORD=8423Otomotiv
-CORS_ORIGIN=https://mrktahsilat.com,https://www.mrktahsilat.com
+CORS_ORIGIN=https://mrkotomotiv.com,https://www.mrkotomotiv.com
 ```
 
 ### PM2 Ecosystem
@@ -278,9 +276,15 @@ Sorun yaşadığınızda:
 
 Kurulum tamamlandıktan sonra:
 
-- **Frontend:** https://mrktahsilat.com
-- **Backend API:** https://mrktahsilat.com/api
-- **Health Check:** https://mrktahsilat.com/health
+- **Frontend:** https://mrkotomotiv.com
+- **Backend API:** https://mrkotomotiv.com/api
+- **Health Check:** https://mrkotomotiv.com/health
 
 Projeniz artık production ortamında çalışmaya hazır!
+
+## 🌐 Erişim
+
+- **Frontend:** https://mrkotomotiv.com
+- **Backend API:** https://mrkotomotiv.com/api
+- **Health Check:** https://mrkotomotiv.com/health
 
