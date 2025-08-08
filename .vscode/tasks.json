@@ -1,0 +1,69 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Quick Deploy to Production",
+			"type": "shell",
+			"command": "./deploy.sh",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Frontend Server",
+			"type": "shell",
+			"command": "npm",
+			"args": ["start"],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/MrkTahsilatWeb/frontend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "Start Backend Server",
+			"type": "shell",
+			"command": "npm",
+			"args": ["run", "dev"],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/MrkTahsilatWeb/backend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start All Servers",
+			"dependsOrder": "parallel",
+			"dependsOn": [
+				"Start Backend Server",
+				"Start Frontend Server"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			}
+		}
+	]
+}
