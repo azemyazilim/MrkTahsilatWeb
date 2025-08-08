@@ -1,27 +1,24 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "mrktahsilat-frontend",
+  "version": "1.0.0",
   "private": true,
+  "description": "MrkTahsilatWeb Frontend - Production Ready",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.2.0",
-    "@mui/x-data-grid": "^8.9.2",
-    "@tanstack/react-table": "^8.21.3",
-    "ag-grid-community": "^34.1.1",
-    "ag-grid-react": "^34.1.1",
     "axios": "^1.11.0",
+    "chart.js": "^4.4.0",
     "react": "^19.1.1",
+    "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.1.1",
-    "react-scripts": "5.0.1",
-    "react-virtualized-auto-sizer": "^1.0.26",
-    "react-window": "^1.8.11"
+    "react-scripts": "5.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "eject": "react-scripts eject"
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build:prod": "GENERATE_SOURCEMAP=false NODE_ENV=production react-scripts build"
   },
   "eslintConfig": {
     "extends": [
@@ -39,5 +36,18 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "tahsilat",
+    "yonetim",
+    "sistemi",
+    "react",
+    "mui"
+  ],
+  "author": "Azem Yazılım",
+  "license": "ISC"
 }

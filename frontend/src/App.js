@@ -1,27 +1,73 @@
 
-import React, { useState } from "react";
-import { Container, Box, TextField, Button, Typography, Alert, MenuItem, Autocomplete } from "@mui/material";
+import React, { useState, useCallback, useMemo } from "react";
+import { Container, Box, TextField, Button, Typography, Alert, MenuItem, Autocomplete, CircularProgress } from "@mui/material";
 import axios from "axios";
 import API_BASE_URL from "./api";
+import Dashboard from "./Dashboard";
+
+// Axios instance with defaults
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Error interceptor
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error:', error);
+    return Promise.reject(error?.response?.data || error);
+  }
+);
 
 function App() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading) return;
+
     setError("");
+    setLoading(true);
+
     try {
-      const res = await axios.post(`${API_BASE_URL}/login`, { username, password });
+      const res = await api.post('/login', { username, password });
       if (res.data.success) {
+        // Save user info to localStorage
+        localStorage.setItem('user', JSON.stringify({
+          username,
+          lastLogin: new Date().toISOString()
+        }));
         setSuccess(true);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Sunucu hatası.");
+      setError(err.message || "Sunucu hatası.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Check for existing session
+  React.useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const { username: savedUsername } = JSON.parse(savedUser);
+        setUsername(savedUsername);
+        setSuccess(true);
+      } catch (err) {
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
 
   if (success) {
     return <TahsilatForm username={username} />;
@@ -29,13 +75,74 @@ function App() {
 
   return (
     <Container maxWidth="xs">
-      <Box sx={{ mt: 8, p: 4, bgcolor: "#f5f5f5", borderRadius: 2, boxShadow: 2 }}>
-        <Typography variant="h5" align="center" gutterBottom>Giriş Yap</Typography>
-        <form onSubmit={handleLogin}>
-          <TextField label="Kullanıcı Adı" fullWidth margin="normal" value={username} onChange={e => setUsername(e.target.value)} required />
-          <TextField label="Şifre" type="password" fullWidth margin="normal" value={password} onChange={e => setPassword(e.target.value)} required />
-          {error && <Alert severity="error">{error}</Alert>}
-          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Giriş Yap</Button>
+      <Box 
+        sx={{ 
+          mt: 8, 
+          p: 4, 
+          bgcolor: "#f5f5f5", 
+          borderRadius: 2, 
+          boxShadow: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}
+      >
+        <Typography 
+          variant="h5" 
+          align="center" 
+          gutterBottom
+          sx={{ fontWeight: 'bold', color: '#1976d2' }}
+        >
+          MRK Tahsilat Sistemi
+        </Typography>
+        <form onSubmit={handleLogin} style={{ width: '100%' }}>
+          <TextField 
+            label="Kullanıcı Adı" 
+            fullWidth 
+            margin="normal" 
+            value={username} 
+            onChange={e => setUsername(e.target.value)} 
+            disabled={loading}
+            required 
+          />
+          <TextField 
+            label="Şifre" 
+            type="password" 
+            fullWidth 
+            margin="normal" 
+            value={password} 
+            onChange={e => setPassword(e.target.value)} 
+            disabled={loading}
+            required 
+          />
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ mt: 2, mb: 2 }}
+              onClose={() => setError('')}
+            >
+              {error}
+            </Alert>
+          )}
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            fullWidth 
+            sx={{ 
+              mt: 2,
+              height: 48,
+              fontSize: '1.1rem',
+              textTransform: 'none'
+            }}
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              'Giriş Yap'
+            )}
+          </Button>
         </form>
       </Box>
     </Container>
